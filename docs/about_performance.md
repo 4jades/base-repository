@@ -30,14 +30,14 @@ BaseRepository is a library that wraps SQLAlchemy, so the performance validation
 
 ## 1. CPU-bound Tests (Wrapping Overhead Verification)
 
-### 1.1 Common Measurement Method  [→ Jump to results](#cpu---read-get_list)
+### 1.1 Common Measurement Method  [→ Jump to results](#attached-cpu-results)
 - All DB I/O is removed (mocked), measuring only pure Python execution time.
 - Metrics: mean, p95, p99
 - Each case is measured with `ITERATIONS = 50`.
 - Default sizes: `[10, 50, 100, 200, 500, 1000, 5000]`
 - Results can be verified through local graphs and raw jsonl output.
 
-### 1.2 Read: get_list performance  [→ Jump to results](#cpu---read-get_list)
+### 1.2 Read: get_list performance  [→ Jump to results](#attached-cpu-results)
 Measures overhead on the "fetch multiple rows" path.
 
 - BaseRepository target API
@@ -57,7 +57,7 @@ Notes
 ---
 
 ### 1.3 Converting: ORM → schema conversion performance  
-[→ Jump to results](#cpu---converting-orm---schema)
+[→ Jump to results](#attached-cpu-results)
 
 Baselines
 - SQLAlchemy + Pydantic conversion
@@ -87,7 +87,7 @@ Measurement conditions
 
 ### 1.4 Create: bulk create preparation cost
 
-[→ Jump to results](#cpu---create-bulk-create-from-dict)
+[→ Jump to results](#attached-cpu-results)
 
 Measures CPU cost up to “input data → ORM object creation and create-path preparation”.
 
@@ -118,7 +118,7 @@ Baselines
 
 ### 1.5 Update: bulk update preparation cost
 
-[→ Jump to results](#cpu---update-bulk-update-from-dict)
+[→ Jump to results](#attached-cpu-results)
 
 Same measurement concept as Create.
 DB execution is excluded.
@@ -143,7 +143,7 @@ Payload example
 
 ### 2.1 Environment and Common Conditions
 
-[→ Jump to results](#db---bulk_create-from-schemas)
+[→ Jump to results](#attached-db-results)
 
 Goal: measure CRUD performance with a real DB (network, driver, transaction included)
 
@@ -180,7 +180,7 @@ Seed data (rows per table)
 
 ### 2.2 Target table schema and seed generation rules
 
-[→ Jump to results](#db---bulk_create-from-schemas)
+[→ Jump to results](#attached-db-results)
 
 Target table: `PerfResult`
 
@@ -202,7 +202,7 @@ PERF_RESULT_COLUMNS = [
 
 ### 2.3 Metrics and measurement window
 
-[→ Jump to results](#db---bulk_create-from-schemas)
+[→ Jump to results](#attached-db-results)
 
 Metrics
 
@@ -224,7 +224,7 @@ Schema conversion is disabled for DB-bound tests.
 
 ### (1) bulk_create
 
-[→ Jump to results](#db---bulk_create-from-schemas)
+[→ Jump to results](#attached-db-results)
 
 Baselines
 
@@ -242,7 +242,7 @@ Iterations
 
 ### (2) bulk_update
 
-[→ Jump to results](#db---bulk_update-from-dict)
+[→ Jump to results](#attached-db-results)
 
 Update query example:
 
@@ -258,7 +258,7 @@ stmt = (
 
 ### (3) fetch (get_one)
 
-[→ Jump to results](#db---fetch-case-1-8-where)
+[→ Jump to results](#attached-db-results)
 
 ```python
 row = (await session.execute(
@@ -270,7 +270,7 @@ row = (await session.execute(
 
 ### (4) fetch (get_list)
 
-[→ Jump to results](#db---fetch-case-1-8-where)
+[→ Jump to results](#attached-db-results)
 
 Fetch performance varies significantly depending on WHERE and ORDER BY composition.
 Cases are separated.
@@ -346,7 +346,7 @@ stmt = (
 
 ### (5) delete one
 
-[→ Jump to results](#db---bulk_update-from-dict)
+[→ Jump to results](#attached-db-results)
 
 ```python
 res = await session.execute(
@@ -358,7 +358,7 @@ res = await session.execute(
 
 ### (6) count all
 
-[→ Jump to results](#db---bulk_update-from-dict)
+[→ Jump to results](#attached-db-results)
 
 ```python
 cnt = await session.scalar(select(func.count()).select_from(PerfResult))
@@ -368,7 +368,7 @@ cnt = await session.scalar(select(func.count()).select_from(PerfResult))
 
 ### (7) count with 3 WHERE predicates
 
-[→ Jump to results](#db---bulk_update-from-dict)
+[→ Jump to results](#attached-db-results)
 
 ```python
 stmt = (
@@ -398,5 +398,28 @@ They are generated locally during benchmark execution.
 
 ### 3.2 Attached Results
 
-run_id: `20251126T065306Z`, iter: `100`, unit: `ms`, seed: `10000000`
 
+#### <a id="attached-cpu-results"></a>CPU BOUND    
+
+
+- run_id: `20251127T050031Z`, iter: `50`, unit: `ms`  
+  → <a href="./perf_results/run_20251127T050031Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+    </a>
+
+#### <a id="attached-db-results"></a>USE DB    
+
+- **MySQL** — run_id: `20251126T065306Z`, iter: `100`, unit: `ms`, seed: `10000000`  
+  → <a href="./perf_results/run_20251126T065306Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>
+
+- **PostgreSQL** — run_id: `20251205T025441Z`, iter: `100`, unit: `ms`, seed: `100000`  
+  → <a href="./perf_results/run_20251205T025441Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>
+
+- **SQLite** — run_id: `20251205T030413Z`, iter: `100`, unit: `ms`, seed: `100000`  
+  → <a href="./perf_results/run_20251205T030413Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>

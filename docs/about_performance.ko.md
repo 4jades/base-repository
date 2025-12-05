@@ -29,14 +29,14 @@ BaseRepository는 SQLAlchemy를 래핑한 라이브러리이므로 성능 검증
 
 ### 1. CPU-bound 테스트 (래핑 오버헤드 검증)
 
-#### 1.1 공통 측정 방식  [→ 결과 바로가기](#cpu---read-get_list)
+#### 1.1 공통 측정 방식  [→ 결과 바로가기](#attached-cpu-results)
 - DB I/O는 전부 제거(모킹)하고, 순수 파이썬 수행 시간만 측정합니다.
 - 측정 지표는 mean, p95, p99 입니다.
 - 각 케이스는 ITERATIONS = 50으로 반복 측정합니다.
 - 기본 사이즈는 `[10, 50, 100, 200, 500, 1000, 5000]` 입니다.
 - 결과는 그래프(로컬 생성물)와 jsonl 원본 데이터를 통해 확인할 수 있습니다.
 
-#### 1.2 Read: get_list 성능  [→ 결과 바로가기](#cpu---read-get_list)
+#### 1.2 Read: get_list 성능  [→ 결과 바로가기](#attached-cpu-results)
 여러 건을 조회(fetch)하는 경로에서의 오버헤드를 측정합니다.
 
 - BaseRepository 대상 API
@@ -53,7 +53,7 @@ BaseRepository는 SQLAlchemy를 래핑한 라이브러리이므로 성능 검증
 메모
 - offset 기반만 측정했으며 cursor 방식 CPU-bound 테스트는 미수행 (TODO)
 
-#### 1.3 Converting: ORM -> schema 변환 성능  [→ 결과 바로가기](#cpu---converting-orm---schema)
+#### 1.3 Converting: ORM -> schema 변환 성능  [→ 결과 바로가기](#attached-cpu-results)
 BaseRepository의 schema converting 비용을 별도로 측정합니다.
 
 비교군
@@ -80,7 +80,7 @@ class ResultStrictSchema(BaseModel):
 * 공정성을 위해 Pydantic, BaseRepository, SQLModel 모두 동일하게 반복문 기반 변환 시간을 측정합니다.
 * 변환 대상 개수는 `[10, 50, 100, 200, 500, 1000, 5000]`, ITERATIONS = 50 입니다.
 
-#### 1.4 Create: bulk create 준비 비용  [→ 결과 바로가기](#cpu---create-bulk-create-from-dict)
+#### 1.4 Create: bulk create 준비 비용  [→ 결과 바로가기](#attached-cpu-results)
 
 DB 실행은 제외하고, “입력 데이터 -> ORM 객체 구성 및 create 경로 준비”까지의 CPU 비용을 측정합니다.
 
@@ -107,7 +107,7 @@ class ResultCreateSchema(BaseModel):
 * SQLAlchemy 직접 구현
 * BaseRepository
 
-#### 1.5 Update: bulk update 준비 비용  [→ 결과 바로가기](#cpu---update-bulk-update-from-dict)
+#### 1.5 Update: bulk update 준비 비용  [→ 결과 바로가기](#attached-cpu-results)
 
 Create와 동일하게 DB 실행은 제외하고 update 경로 준비까지의 CPU 비용을 측정합니다.
 
@@ -131,7 +131,7 @@ Create와 동일하게 DB 실행은 제외하고 update 경로 준비까지의 C
 
 ### 2. DB-bound 테스트 (실제 DB 포함 성능 검증)
 
-#### 2.1 환경 및 공통 조건  [→ 결과 바로가기](#db---bulk_create-from-schemas)
+#### 2.1 환경 및 공통 조건  [→ 결과 바로가기](#attached-db-results)
 
 * 목표: 실제 DB에서 CRUD 수행 시간을 측정합니다. (네트워크, 드라이버, 트랜잭션 포함)
 * 비교군
@@ -159,7 +159,7 @@ Create와 동일하게 DB 실행은 제외하고 update 경로 준비까지의 C
   * 테이블 당 5천만 row
   * 테이블 당 1억 row
 
-#### 2.2 타겟 테이블 스키마 및 시드 생성 규칙  [→ 결과 바로가기](#db---bulk_create-from-schemas)
+#### 2.2 타겟 테이블 스키마 및 시드 생성 규칙  [→ 결과 바로가기](#attached-db-results)
 
 타겟 테이블은 `PerfResult`이며, 생성되는 컬럼 및 값 규칙은 아래와 같습니다.
 
@@ -177,7 +177,7 @@ PERF_RESULT_COLUMNS = [
 ]
 ```
 
-#### 2.3 측정 지표 및 측정 구간  [→ 결과 바로가기](#db---bulk_create-from-schemas)
+#### 2.3 측정 지표 및 측정 구간  [→ 결과 바로가기](#attached-db-results)
 
 * 지표: mean, p95, p99
 * 트랜잭션 포함 측정 구간(공통)
@@ -187,14 +187,14 @@ PERF_RESULT_COLUMNS = [
 
 #### 2.4 DB 테스트 케이스
 
-##### (1) bulk_create  [→ 결과 바로가기](#db---bulk_create-from-schemas)
+##### (1) bulk_create  [→ 결과 바로가기](#attached-db-results)
 
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * 측정 구간: start -> 객체 생성 + create 호출 + commit + 결과 반환 -> end
 * 입력 크기: `INSERT_ROW_VALUES = [100, 500, 1_000, 5_000]`
 * 반복: `ITERATIONS = 100`
 
-##### (2) bulk_update  [→ 결과 바로가기](#db---bulk_update-from-dict)
+##### (2) bulk_update  [→ 결과 바로가기](#attached-db-results)
 
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * 측정 구간: bulk_create와 동일 (commit 포함)
@@ -208,7 +208,7 @@ stmt = (
 )
 ```
 
-##### (3) fetch (get_one)  [→ 결과 바로가기](#db---fetch-case-1-8-where)
+##### (3) fetch (get_one)  [→ 결과 바로가기](#attached-db-results)
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * get 쿼리 예시
 
@@ -217,7 +217,7 @@ stmt = (
 ```
 
 
-##### (4) fetch (get_list)  [→ 결과 바로가기](#db---fetch-case-1-8-where)
+##### (4) fetch (get_list)  [→ 결과 바로가기](#attached-db-results)
 
 fetch는 where/order 구성이 달라지면 결과가 크게 달라질 수 있어 케이스를 분리했습니다. (추후 추가되어야합니다.)
 각 케이스는 SQLAlchemy, BaseRepository, SQLModel 3개를 동일 조건으로 비교하며, 호출 후 commit 및 결과 반환까지 포함해 측정합니다.
@@ -283,7 +283,7 @@ stmt = (
 )
 ```
 
-##### (5) delete one [→ 결과 바로가기](#db---bulk_update-from-dict)
+##### (5) delete one [→ 결과 바로가기](#attached-db-results)
 
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * 삭제 쿼리 예시
@@ -292,7 +292,7 @@ stmt = (
     res = await session.execute(delete(PerfResult).where(PerfResult.id == target_id))
 ```
 
-##### (6) count all [→ 결과 바로가기](#db---bulk_update-from-dict)
+##### (6) count all [→ 결과 바로가기](#attached-db-results)
 
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * count 쿼리 예시
@@ -302,7 +302,7 @@ stmt = (
 ```
 
 
-##### (7) count where 구문 3개 [→ 결과 바로가기](#db---bulk_update-from-dict)
+##### (7) count where 구문 3개 [→ 결과 바로가기](#attached-db-results)
 
 * 비교군: SQLAlchemy, BaseRepository, SQLModel
 * count 쿼리 예시
@@ -334,4 +334,28 @@ NOTE: 리포트 이미지(`tests/perf/report/**`)는 저장소에 포함하지 �
 
 #### 3.2 결과 첨부
 
-run_id: `20251126T065306Z`, iter: `100`, 단위: `ms`, seed: 10000000
+
+#### <a id="attached-cpu-results"></a>CPU BOUND    
+
+
+- run_id: `20251127T050031Z`, iter: `50`, unit: `ms`  
+  → <a href="./perf_results/run_20251127T050031Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+    </a>
+
+#### <a id="attached-db-results"></a>USE DB    
+
+- **MySQL** — run_id: `20251126T065306Z`, iter: `100`, unit: `ms`, seed: `10000000`  
+  → <a href="./perf_results/run_20251126T065306Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>
+
+- **PostgreSQL** — run_id: `20251205T025441Z`, iter: `100`, unit: `ms`, seed: `100000`  
+  → <a href="./perf_results/run_20251205T025441Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>
+
+- **SQLite** — run_id: `20251205T030413Z`, iter: `100`, unit: `ms`, seed: `100000`  
+  → <a href="./perf_results/run_20251205T030413Z/" target="_blank" rel="noreferrer">
+       View full HTML report
+     </a>
