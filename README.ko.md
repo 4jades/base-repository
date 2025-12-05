@@ -4,8 +4,8 @@
 
 # Base Repository Library
 
-![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-informational)
-![License](https://img.shields.io/github/license/<org>/<repo>)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-informational)
+![License](https://img.shields.io/github/license/4jades/base-repository)
 ![Release](https://img.shields.io/github/v/release/<org>/<repo>)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
@@ -31,18 +31,18 @@ Repository를 상속하면, 조회/생성/수정/삭제를 바로 쓸 수 있습
 
 
 ## Links
-- [How to use](./how_to_use.md)
-- [Performance](./about_performance.md)
+- [How to use](./docs/how_to_use.md)
+- [Performance](./docs/about_performance.md)
 ---
 
 ## Installation
 
 ```bash
 # PyPI 배포 전
-pip install -U "fastapi-base-repository @ git+https://github.com/<org>/<repo>.git"
+pip install -U "base-repository @ git+https://github.com/4jades/base-repository.git"
 
 # PyPI 배포 후
-pip install -U fastapi-base-repository
+pip install -U base-repository
 ```
 
 ---

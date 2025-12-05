@@ -4,8 +4,8 @@
 
 # Base Repository Library
 
-![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-informational)
-![License](https://img.shields.io/github/license/<org>/<repo>)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-informational)
+![License](https://img.shields.io/github/license/4jades/base-repository)
 ![Release](https://img.shields.io/github/v/release/<org>/<repo>)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
@@ -31,8 +31,8 @@ To see more about [how to test](./tox.ini) and the [result](./docs/dependency_te
 
 
 ## Links
-- [How to use](./how_to_use.md)
-- [Performance](./about_performance.md)
+- [How to use](./docs/how_to_use.md)
+- [Performance](./docs/about_performance.md)
 
 ---
 
@@ -40,7 +40,7 @@ To see more about [how to test](./tox.ini) and the [result](./docs/dependency_te
 
 ```bash
 # Before publishing to PyPI
-pip install -U "fastapi-base-repository @ git+https://github.com/<org>/<repo>.git"
+pip install -U "base-repository @ git+https://github.com/4jades/base-repository.git"
 
 # After publishing to PyPI
 pip install -U fastapi-base-repository
