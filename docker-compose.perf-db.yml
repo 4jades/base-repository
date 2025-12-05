@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  perf-mysql:
+    image: mysql:8.0
+    container_name: perf-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: perf_db
+      MYSQL_USER: perf_user
+      MYSQL_PASSWORD: perf_pass
+    ports:
+      - "3307:3306"
+    command:
+      [
+        "mysqld",
+        "--local-infile=1",
+        "--secure-file-priv=/var/lib/mysql-files",
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci"
+      ]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+    volumes:
+      - ./tests/perf/mysql-init:/docker-entrypoint-initdb.d:ro
+      - ./tests/perf/seed:/var/lib/mysql-files
+
+  perf-postgres:
+    image: postgres:16
+    container_name: perf-postgres
+    environment:
+      POSTGRES_DB: perf_db
+      POSTGRES_USER: perf_user
+      POSTGRES_PASSWORD: perf_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U perf_user -d perf_db -h 127.0.0.1"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+    volumes:
+      - ./tests/perf/postgres-init:/docker-entrypoint-initdb.d:ro
+      - ./tests/perf/seed:/var/lib/postgresql-files:ro
+
+  perf-sqlite:
+    image: alpine:3.20
+    container_name: perf-sqlite
+    working_dir: /work
+    command: ["/bin/sh", "-lc", "apk add --no-cache sqlite && tail -f /dev/null"]
+    volumes:
+      - ./tests/perf/sqlite:/work/sqlite
+      - ./tests/perf/seed:/work/seed:ro

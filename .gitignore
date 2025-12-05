@@ -1,0 +1,9 @@
+**/seed/perf_seed.csv
+**/perf/report
+.vscode
+.venv
+uv*
+.pytest*
+.ruff_cache
+.coverage
+.python-version
