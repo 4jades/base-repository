@@ -38,7 +38,7 @@ Repository를 상속하면, 조회/생성/수정/삭제를 바로 쓸 수 있습
 ## Installation
 
 ```bash
-not yet
+pip install base-repository
 ```
 
 ---

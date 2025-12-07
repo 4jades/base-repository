@@ -38,7 +38,7 @@ To see more about [how to test](./tox.ini) and the [result](./docs/dependency_te
 ## Installation
 
 ```bash
-not yet
+pip install base-repository
 ```
 
 ---
