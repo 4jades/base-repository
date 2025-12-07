@@ -99,9 +99,6 @@ class ListQuery(Generic[TModel]):
         self._offset_size: int | None = None
         self._sealed: bool = False
 
-    # ------------------------------------------------------------------ #
-    # Internal state protection                                           #
-    # ------------------------------------------------------------------ #
 
     def _ensure_mutable(self) -> None:
         """
@@ -118,9 +115,6 @@ class ListQuery(Generic[TModel]):
         if self._sealed:
             raise RuntimeError("This query has already been used. Create a new ListQuery.")
 
-    # ------------------------------------------------------------------ #
-    # User-facing DSL methods                                             #
-    # ------------------------------------------------------------------ #
 
     def where(self, flt: BaseRepoFilter | None) -> ListQuery[TModel]:
         """
@@ -158,6 +152,7 @@ class ListQuery(Generic[TModel]):
         self._filter = flt
         return self
 
+
     def order_by(self, items: Sequence[ColumnElement[Any]]) -> ListQuery[TModel]:
         """
         Define the ORDER BY clause.
@@ -186,6 +181,7 @@ class ListQuery(Generic[TModel]):
         self._order_items = items
         return self
 
+
     def with_cursor(self, cursor: dict[str, Any] | None = None) -> ListQuery[TModel]:
         """
         Switch to CURSOR (keyset) paging mode.
@@ -210,6 +206,7 @@ class ListQuery(Generic[TModel]):
         self._cursor = {} if cursor is None else cursor
         self._mode = PagingMode.CURSOR
         return self
+
 
     def limit(self, size: int) -> ListQuery[TModel]:
         """
@@ -246,6 +243,7 @@ class ListQuery(Generic[TModel]):
         self._cursor_size = size
         return self
 
+
     def paging(self, *, page: int, size: int) -> ListQuery[TModel]:
         """
         Switch to OFFSET (page, size) paging mode.
@@ -270,9 +268,6 @@ class ListQuery(Generic[TModel]):
         self._mode = PagingMode.OFFSET
         return self
 
-    # ------------------------------------------------------------------ #
-    # Read-only properties                                                #
-    # ------------------------------------------------------------------ #
 
     @property
     def filter(self) -> Annotated[BaseRepoFilter | None, Doc("The current BaseRepoFilter (or None if unset).")]:
@@ -305,11 +300,6 @@ class ListQuery(Generic[TModel]):
     def offset_size(self) -> Annotated[int | None, Doc("The page size for OFFSET paging (or None if unset).")]:
         return self._offset_size
 
-
-# ---------------------------------------------------------------------- #
-# Internal helper functions                                              #
-# Users typically access these indirectly via BaseRepository.execute/query_to_stmt. #
-# ---------------------------------------------------------------------- #
 
 def _apply_where(stmt: Select[tuple[TModel]], q: ListQuery[TModel]) -> Select[tuple[TModel]]:
     """

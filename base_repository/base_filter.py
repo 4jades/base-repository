@@ -76,9 +76,6 @@ class BaseRepoFilter:
         ),
     ] = False
 
-    # ------------------------------------------------------------------ #
-    # Internal utilities                                                  #
-    # ------------------------------------------------------------------ #
 
     @staticmethod
     def _is_seq(
@@ -93,6 +90,7 @@ class BaseRepoFilter:
             return False
 
         return isinstance(value, (Sequence, ABCSet))
+
 
     @classmethod
     def _resolve_column_name(
@@ -112,9 +110,6 @@ class BaseRepoFilter:
 
         return field_name
 
-    # ------------------------------------------------------------------ #
-    # Public API                                                         #
-    # ------------------------------------------------------------------ #
 
     def where_criteria(
         self,

@@ -105,6 +105,7 @@ class OrderByStrategy:
             uniq.append(c)
         return uniq
 
+
     @staticmethod
     def _normalize_and_validate(model: type[TModel], cols: list[Any]) -> list[ColumnElement[Any]]:
         """
@@ -228,6 +229,7 @@ class OrderByStrategy:
 
         return out
 
+
     @staticmethod
     def _same_table(a: Any, b: Any) -> bool:
         """
@@ -237,6 +239,7 @@ class OrderByStrategy:
         ta = getattr(a, "table", None)
         tb = getattr(b, "table", None)
         return ta is not None and tb is not None and ta is tb
+
 
     @staticmethod
     def _same_column(a: Any, b: Any) -> bool:
@@ -270,6 +273,7 @@ class OrderByStrategy:
 
         return False
 
+
     @staticmethod
     def _base_key(col: ColumnElement[Any]) -> str:
         """
@@ -280,6 +284,7 @@ class OrderByStrategy:
             inner = col.element
             return getattr(inner, "key", getattr(inner, "name", repr(inner)))
         return getattr(col, "key", getattr(col, "name", repr(col)))
+
 
     @staticmethod
     def is_desc(col: ColumnElement[Any]) -> bool:

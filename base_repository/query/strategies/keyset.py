@@ -47,29 +47,23 @@ class KeysetStrategy:
            - All ASC -> tuple comparison or simple comparison
            - DESC present -> OR-ladder (seek) condition
         """
-        # 1) Validate order_cols and size
         if not order_cols:
             raise ValueError("keyset pagination requires order_cols.")
         if size < 1:
             raise ValueError("size must be >= 1.")
 
-        # 2) First page (cursor is None or empty dict)
         if cursor is None or len(cursor) == 0:
             return stmt.limit(size)
 
-        # 3) Validate cursor keys
         col_keys = [KeysetStrategy._col_key(c) for c in order_cols]
         cursor_keys = list(cursor.keys())
 
-        # Key set must match exactly
         if set(cursor_keys) != set(col_keys):
             raise ValueError(f"cursor keys mismatch. required={col_keys}, got={cursor_keys}")
 
-        # Order must match as well
         if cursor_keys != col_keys:
             raise ValueError(f"cursor key order must match order_cols. required={col_keys}, got={cursor_keys}")
 
-        # 4) Validate values and cast to column python_type when possible
         values: list[Any] = []
         stripped = KeysetStrategy._strip_unary(order_cols)
         if len(stripped) != len(col_keys):
@@ -89,11 +83,8 @@ class KeysetStrategy:
                     raise TypeError(f"cursor['{key}'] is not {expected_py.__name__}.") from e
             values.append(v)
 
-        # 5) Determine direction flags (True = DESC)
         dirs = [OrderByStrategy.is_desc(c) for c in order_cols]
 
-        # 6) Build conditions
-        # All ASC: tuple comparison or simple comparison
         if not any(dirs):
             if len(stripped) == 1:
                 cond = stripped[0] > values[0]
@@ -118,6 +109,7 @@ class KeysetStrategy:
         seek = or_(*or_conds)
         return stmt.where(seek).limit(size)
 
+
     @staticmethod
     def _col_key(col: ClauseElement) -> str:
         """
@@ -129,6 +121,7 @@ class KeysetStrategy:
         if isinstance(col, UnaryExpression):
             col = col.element
         return getattr(col, "key", getattr(col, "name", repr(col)))
+
 
     @staticmethod
     def _strip_unary(cols: Sequence[ColumnElement[Any]]) -> list[ColumnElement[Any]]:
