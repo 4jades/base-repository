@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import Select
 
-from repo_types import TModel
+from base_repository.repo_types import TModel
 
 
 class OffsetStrategy:

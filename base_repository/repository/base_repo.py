@@ -12,14 +12,14 @@ from sqlalchemy.orm import Mapper
 from sqlalchemy.sql import Select
 from typing_extensions import Doc
 
-from base_filter import BaseRepoFilter
-from base_mapper import BaseMapper
-from query.converter import query_to_stmt
-from query.list_query import ListQuery
-from repo_types import QueryOrStmt, TModel
-from sa_helper import sa_mapper
-from session_provider import SessionProvider
-from validator import validate_schema_base
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.base_mapper import BaseMapper
+from base_repository.query.converter import query_to_stmt
+from base_repository.query.list_query import ListQuery
+from base_repository.repo_types import QueryOrStmt, TModel
+from base_repository.sa_helper import sa_mapper
+from base_repository.session_provider import SessionProvider
+from base_repository.validator import validate_schema_base
 
 
 class BaseRepository(Generic[TModel]):

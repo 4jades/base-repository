@@ -31,8 +31,8 @@ from sqlalchemy.sql import operators
 from sqlalchemy.sql.elements import ColumnElement, TextClause, UnaryExpression
 from sqlalchemy.sql.functions import FunctionElement
 
-from repo_types import TModel
-from sa_helper import sa_mapper
+from base_repository.repo_types import TModel
+from base_repository.sa_helper import sa_mapper
 
 
 class OrderByStrategy:

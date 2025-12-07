@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generic
-from repo_types import TDomain, TModel
+from .repo_types import TDomain, TModel
 
 class BaseMapper(ABC, Generic[TModel, TDomain]):
     """
