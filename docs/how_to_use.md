@@ -1,6 +1,6 @@
 <div align="right">
-  <a href="./how_to_use.md">English</a> | <a href="./how_to_use.ko.md">한국어</a>
-</div>    
+  <a href="https://4jades.github.io/base-repository/how_to_use.html">English</a> | <a href="https://4jades.github.io/base-repository/how_to_use.ko.html">한국어</a>
+</div>       
 
 # How To Use (User Guide)
 

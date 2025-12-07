@@ -1,5 +1,5 @@
 <div align="right">
-  <a href="./about_performance.md">English</a> | <a href="./about_performance.ko.md">한국어</a>
+  <a href="https://4jades.github.io/base-repository/about_performance.md">English</a> | <a href="https://4jades.github.io/base-repository/about_performance.ko.md">한국어</a>
 </div>    
 
 ## Performance Test
