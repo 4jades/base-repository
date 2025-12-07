@@ -5,9 +5,8 @@
 # Base Repository
 
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-informational)
-![License](https://img.shields.io/github/license/4jades/base-repository)
-![Release](https://img.shields.io/github/v/release/<org>/<repo>)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![License](https://img.shields.io/github/license/4jades/base-repository)
 
 
 SQLAlchemy를 래핑해 기본 CRUD와 조회 DSL을 제공하는 Repository 라이브러리입니다.
@@ -31,18 +30,15 @@ Repository를 상속하면, 조회/생성/수정/삭제를 바로 쓸 수 있습
 
 
 ## Links
-- [How to use](./docs/how_to_use.md)
-- [Performance](./docs/about_performance.md)
+- [How to use](https://4jades.github.io/base-repository/how_to_use.html)
+- [Performance](https://4jades.github.io/base-repository/about_performance.html)
+
 ---
 
 ## Installation
 
 ```bash
-# PyPI 배포 전
-pip install -U "base-repository @ git+https://github.com/4jades/base-repository.git"
-
-# PyPI 배포 후
-pip install -U base-repository
+not yet
 ```
 
 ---

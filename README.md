@@ -5,9 +5,8 @@
 # Base Repository
 
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-informational)
-![License](https://img.shields.io/github/license/4jades/base-repository)
-![Release](https://img.shields.io/github/v/release/<org>/<repo>)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![License](https://img.shields.io/github/license/4jades/base-repository)
 
 
 A repository library that wraps SQLAlchemy and provides built-in CRUD and a query DSL.    
@@ -31,19 +30,15 @@ To see more about [how to test](./tox.ini) and the [result](./docs/dependency_te
 
 
 ## Links
-- [How to use](./docs/how_to_use.md)
-- [Performance](./docs/about_performance.md)
+- [How to use](https://4jades.github.io/base-repository/how_to_use.html)
+- [Performance](https://4jades.github.io/base-repository/about_performance.html)
 
 ---
 
 ## Installation
 
 ```bash
-# Before publishing to PyPI
-pip install -U "base-repository @ git+https://github.com/4jades/base-repository.git"
-
-# After publishing to PyPI
-pip install -U fastapi-base-repository
+not yet
 ```
 
 ---
