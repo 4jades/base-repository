@@ -10,11 +10,11 @@ from sqlalchemy import Integer, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from base_filter import BaseRepoFilter
-from base_mapper import BaseMapper
-from query.list_query import ListQuery
-from repository.base_repo import BaseRepository
-from session_provider import SessionProvider
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.base_mapper import BaseMapper
+from base_repository.query.list_query import ListQuery
+from base_repository.repository.base_repo import BaseRepository
+from base_repository.session_provider import SessionProvider
 
 from .fakes import FakeAsyncSession, FakeResult
 from .models import Result

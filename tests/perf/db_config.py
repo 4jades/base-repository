@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
-from session_provider import SessionProvider
+from base_repository.session_provider import SessionProvider
 
 
 class PerfDBKind(StrEnum):

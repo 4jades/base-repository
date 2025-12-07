@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
 from sqlalchemy import select
 
-from base_filter import BaseRepoFilter
-from repository.base_repo import BaseRepository
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.repository.base_repo import BaseRepository
 from tests.perf.perf_reporter import record_table
 from ..fakes import FakeAsyncSession, FakeResult
 from ..models import Item, Category, Result

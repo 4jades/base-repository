@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from base_mapper import BaseMapper
+from base_repository.base_mapper import BaseMapper
 
 
 

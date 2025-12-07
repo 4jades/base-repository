@@ -24,8 +24,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from sqlmodel import SQLModel, Field, select as sqlm_select
 
-from base_filter import BaseRepoFilter
-from repository.base_repo import BaseRepository
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.repository.base_repo import BaseRepository
 from tests.perf.perf_reporter import record_one, record_table
 from tests.perf.seed.config import PERF_RESULT_COLUMNS, SEED_DATA_ROWS
 from .db_config import get_perf_engine, perf_session_provider
