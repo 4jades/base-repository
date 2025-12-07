@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from sqlalchemy import Select
 
-from query.list_query import ListQuery, _build_list_query
-from repo_types import QueryOrStmt, TModel
+from .list_query import ListQuery, _build_list_query
+from base_repository.repo_types import QueryOrStmt, TModel
 
 
 def query_to_stmt(

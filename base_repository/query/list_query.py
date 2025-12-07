@@ -8,11 +8,11 @@ from sqlalchemy import Select, select
 from sqlalchemy.sql.elements import ColumnElement
 from typing_extensions import Doc
 
-from base_filter import BaseRepoFilter
-from query.strategies.keyset import KeysetStrategy
-from query.strategies.offset import OffsetStrategy
-from query.strategies.order_by import OrderByStrategy
-from repo_types import TModel
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.repo_types import TModel
+
+from .strategies import KeysetStrategy, OrderByStrategy, OffsetStrategy
+
 
 
 class PagingMode(Enum):

@@ -6,8 +6,8 @@ from typing import Any, cast
 from sqlalchemy import ClauseElement, Select, and_, or_, tuple_
 from sqlalchemy.sql.elements import ColumnElement, UnaryExpression
 
-from query.strategies.order_by import OrderByStrategy
-from repo_types import TModel
+from base_repository.query.strategies.order_by import OrderByStrategy
+from base_repository.repo_types import TModel
 
 
 class KeysetStrategy:
