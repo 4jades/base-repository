@@ -9,7 +9,7 @@
 ![License](https://img.shields.io/github/license/4jades/base-repository)
 
 
-A repository library that wraps SQLAlchemy and provides built-in CRUD and a query DSL.    
+A repository library that wraps SQLAlchemy and provides built-in CRUD and a query DSL..    
 Once you inherit from `BaseRepository`, you can use create/read/update/delete right away.
 
 - No need to re-implement simple CRUD over and over.
