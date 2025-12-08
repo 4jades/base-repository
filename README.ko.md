@@ -52,8 +52,7 @@ pip install base-repository
 ```python
 from dataclasses import dataclass
 from pydantic import BaseModel
-from base_repository import BaseRepoFilter
-from base_repository.repository import BaseRepository
+from base_repository import BaseRepoFilter, BaseRepository
 
 # 이미 프로젝트에 존재하는 SQLAlchemy ORM 모델 및 pydantic 스키마(예시)
 class Base(DeclarativeBase):
