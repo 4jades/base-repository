@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import re
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import Column, Integer, String, column, select
+from sqlalchemy import Column, ColumnElement, Integer, Select, String, column, select
 from sqlalchemy.orm import DeclarativeBase
 
-from query.strategies.keyset import KeysetStrategy
+from base_repository.query.strategies.keyset import KeysetStrategy
 
 
 # SQLAlchemy Base / model definitions for tests
@@ -141,7 +142,10 @@ def test_cursor_key_set_mismatch_raises_for_multi_column() -> None:
     """
     # 1
     stmt = select(User)
-    order_cols = [User.id, User.name]
+    order_cols = [
+        cast(ColumnElement[Any], User.id),
+        cast(ColumnElement[Any], User.name)
+    ]
 
     # 2
     cursor = {"id": 1, "wrong_key": "kim"}
@@ -179,7 +183,10 @@ def test_multi_columns_all_asc_uses_tuple_comparison() -> None:
     """
     # 1
     stmt = select(User)
-    order_cols = [User.id, User.name]
+    order_cols = [
+        cast(ColumnElement[Any], User.id),
+        cast(ColumnElement[Any], User.name)
+    ]
 
     # 2
     cursor = {"id": 1, "name": "kim"}
@@ -221,7 +228,10 @@ def test_multiple_desc_and_asc_combination_generates_or_ladder_with_both_ops() -
     """
     # 1
     stmt = select(User)
-    order_cols = [User.id.desc(), User.name.asc()]
+    order_cols: list[ColumnElement[Any]] = [
+        cast(ColumnElement[Any], User.id.desc()),
+        cast(ColumnElement[Any], User.name.asc()),
+    ]
 
     # 2
     cursor = {"id": 5, "name": "bob"}
@@ -243,7 +253,12 @@ def test_mixed_direction_with_three_columns_generates_multi_or_ladder() -> None:
     """
     # 1
     stmt = select(User)
-    order_cols = [User.id.asc(), User.name.desc(), User.age.desc()]
+    order_cols = [
+        cast(ColumnElement[Any], User.id.asc()),
+        cast(ColumnElement[Any], User.name.desc()),
+        cast(ColumnElement[Any], User.age.desc()),
+    ]
+
 
     # 2
     cursor = {"id": 1, "name": "foo", "age": 10}
@@ -304,10 +319,13 @@ def test_cursor_key_order_enforced_raises_on_swapped_keys() -> None:
     """
     # 1
     stmt = select(User)
-    order_cols = [User.id, User.name]
+    order_cols = [
+        cast(ColumnElement[Any], User.id),
+        cast(ColumnElement[Any], User.name),
+    ]
 
     # 2
-    cursor = {"name": "kim", "id": 1}
+    cursor: dict[str, Any] = {"name": "kim", "id": 1}
 
     # 3
     with pytest.raises(ValueError):
@@ -421,9 +439,9 @@ def test_strip_unary_length_mismatch_triggers_error() -> None:
     3. Assert ValueError is raised with the expected message.
     """
     # 1
-    order_cols = [column("a"), column("b")]
-    stmt = select(column("a"))
-    cursor = {"a": 1, "b": 2}
+    order_cols: list[ColumnElement[Any]] = [column("a"), column("b")]
+    stmt: Select[Any] = select(column("a"))
+    cursor: dict[str, Any] = {"a": 1, "b": 2}
 
     # 2
     with patch.object(KeysetStrategy, "_strip_unary", return_value=[column("a")]):

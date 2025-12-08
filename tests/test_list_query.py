@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-import query.list_query as lq_mod
-from base_filter import BaseRepoFilter
-from query.list_query import ListQuery, PagingMode
+import base_repository.query.list_query as lq_mod
+from base_repository.base_filter import BaseRepoFilter
+from base_repository.query.list_query import ListQuery, PagingMode
 
 from .fakes import FakeAsyncSession, FakeResult
 from .models import Result
@@ -57,13 +57,13 @@ def test_with_cursor_requires_non_empty_order_by_and_limit_for_build() -> None:
     # 3
     q_no_limit = ListQuery(Result).order_by([Result.id.asc()]).with_cursor({})
     with pytest.raises(ValueError):
-        from query.list_query import _build_list_query
+        from base_repository.query.list_query import _build_list_query
 
         _ = _build_list_query(q_no_limit)
 
     # 4
     q_ok = ListQuery(Result).order_by([Result.id.asc()]).with_cursor().limit(10)
-    from query.converter import query_to_stmt
+    from base_repository.query.converter import query_to_stmt
 
     _ = query_to_stmt(q_ok)
 
@@ -118,7 +118,7 @@ def test_limit_and_paging_validations() -> None:
         q.limit(-1)
 
     # 2
-    from query.converter import _build_list_query
+    from base_repository.query.converter import _build_list_query
 
     with pytest.raises(ValueError):
         _build_list_query(
@@ -159,7 +159,7 @@ def test_build_calls_keysetstrategy_apply(monkeypatch) -> None:
     monkeypatch.setattr(lq_mod.KeysetStrategy, "apply", staticmethod(fake_keyset_apply))
 
     # 2
-    from query.list_query import _build_list_query
+    from base_repository.query.list_query import _build_list_query
 
     q = (
         ListQuery(Result)
@@ -191,7 +191,7 @@ def test_build_calls_offsetstrategy_apply(monkeypatch) -> None:
     monkeypatch.setattr(lq_mod.OffsetStrategy, "apply", staticmethod(fake_offset_apply))
 
     # 2
-    from query.list_query import _build_list_query
+    from base_repository.query.list_query import _build_list_query
 
     q = ListQuery(Result).order_by([Result.id.asc()]).paging(page=3, size=10)
 
@@ -208,7 +208,7 @@ def test_sealed_blocks_all_mutations_after_build() -> None:
     3. Assert all mutating methods raise RuntimeError.
     """
     # 1
-    from query.list_query import _build_list_query
+    from base_repository.query.list_query import _build_list_query
 
     q = ListQuery(Result).order_by([Result.id.asc()]).paging(page=1, size=10)
 
@@ -236,7 +236,7 @@ def test_valid_offset_flow_executes_and_seals() -> None:
     3. Assert further mutation raises RuntimeError.
     """
     # 1
-    from query.list_query import _build_list_query
+    from base_repository.query.list_query import _build_list_query
 
     q = (
         ListQuery(Result)
@@ -315,7 +315,7 @@ def test_apply_paging_cursor_mode_missing_cursor() -> None:
     3. Assert _apply_paging raises ValueError with the expected message.
     """
     # 1
-    from query.list_query import _apply_paging, _compute_order_cols
+    from base_repository.query.list_query import _apply_paging, _compute_order_cols
     from sqlalchemy import select
 
     q = ListQuery(Result)
@@ -340,7 +340,7 @@ def test_apply_paging_offset_mode_missing_page_or_size() -> None:
     3. Assert _apply_paging raises ValueError with the expected message.
     """
     # 1
-    from query.list_query import _apply_paging, _compute_order_cols
+    from base_repository.query.list_query import _apply_paging, _compute_order_cols
     from sqlalchemy import select
 
     q = ListQuery(Result)

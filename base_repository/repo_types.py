@@ -11,7 +11,7 @@ else:
     from typing_extensions import TypeVar
 
 if TYPE_CHECKING:
-    from query.list_query import ListQuery
+    from base_repository.query.list_query import ListQuery
 
 TModel = TypeVar("TModel", bound=DeclarativeBase)
 TDomain = TypeVar("TDomain", bound=BaseModel, default=Any)

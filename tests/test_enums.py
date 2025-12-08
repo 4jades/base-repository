@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import column, delete, insert, select, table, update
 
-from enums import StatementType
+from base_repository.enums import StatementType
 
 
 def _t():

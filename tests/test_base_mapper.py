@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any, cast
 
 import pytest
 
@@ -14,13 +15,13 @@ def test_cannot_instantiate_abstract_mapper() -> None:
     3. Assert TypeError is raised.
     """
     # 1
-    class IncompleteMapper(BaseMapper[int, int]):
+    class IncompleteMapper(BaseMapper):
         pass
 
     # 2
     # 3
     with pytest.raises(TypeError):
-        _ = IncompleteMapper()
+        _ = IncompleteMapper()  # type: ignore[abstract]
 
 
 
@@ -32,7 +33,7 @@ def test_can_instantiate_concrete_mapper_and_methods_work() -> None:
     3. Assert both methods return expected values.
     """
     # 1
-    class ConcreteMapper(BaseMapper[int, int]):
+    class ConcreteMapper(BaseMapper):
         def to_domain(self, orm_object: int) -> int:
             return orm_object + 1
 
@@ -56,12 +57,12 @@ def test_calling_super_hits_base_notimplemented_lines() -> None:
     3. Call to_domain and to_orm and assert NotImplementedError is raised.
     """
     # 1
-    class SuperCallingMapper(BaseMapper[int, int]):
+    class SuperCallingMapper(BaseMapper):
         def to_domain(self, orm_object: int) -> int:
-            return super().to_domain(orm_object)
+            return cast(Any, super()).to_domain(orm_object)
 
         def to_orm(self, domain_object: int) -> int:
-            return super().to_orm(domain_object)
+            return cast(Any, super()).to_orm(domain_object)
 
     # 2
     m = SuperCallingMapper()
