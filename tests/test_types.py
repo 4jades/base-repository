@@ -18,7 +18,7 @@ def test_repo_types_version_branch_is_covered(monkeypatch) -> None:
     5. Sanity-check exported symbols exist.
     """
     # 1
-    sys.modules.pop("repo_types", None)
+    sys.modules.pop("base_repository.repo_types", None)
     sys.modules.pop("typing_extensions", None)
 
     # 2
@@ -32,11 +32,11 @@ def test_repo_types_version_branch_is_covered(monkeypatch) -> None:
         monkeypatch.setattr(sys, "version_info", (3, 12, 0))
 
         fake_te = types.ModuleType("typing_extensions")
-        fake_te.TypeVar = lambda *args, **kwargs: object()
+        fake_te.TypeVar = lambda *args, **kwargs: object() # type: ignore[attr-defined]
         monkeypatch.setitem(sys.modules, "typing_extensions", fake_te)
 
     # 4
-    mod = importlib.import_module("repo_types")
+    mod = importlib.import_module("base_repository.repo_types")
 
     # 5
     assert hasattr(mod, "TModel")

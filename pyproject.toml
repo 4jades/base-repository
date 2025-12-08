@@ -8,7 +8,7 @@ dependencies = [
     "pydantic>=1.7.4",
     "sqlalchemy>=1.4",
     "typing-extensions>=4.6.0",
-    "pydantic>=2.8.0,<3.0.0; python_version >= '3.13'"
+    "pydantic>=2.8.0,<3.0.0; python_version >= '3.13'",
 ]
 
 [dependency-groups]
@@ -26,6 +26,8 @@ dev = [
     "coverage[toml]>=7.6.0",
     "asyncpg>=0.31.0",
     "aiosqlite>=0.21.0",
+    "setuptools>=80.9.0",
+    "types-setuptools>=80.9.0.20250822",
 ]
 
 [tool.coverage.run]

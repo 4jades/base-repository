@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Awaitable, Callable
-
+from typing import Any, Awaitable, Callable, cast
+from sqlalchemy.ext.asyncio import AsyncSession
 import pytest
 import statistics
 import time
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, Table, select
 
 from base_repository.base_filter import BaseRepoFilter
 from base_repository.repository.base_repo import BaseRepository
@@ -217,9 +217,12 @@ SELECT_RESULT = (
     .offset(0)
 )
 
+
+
+id_col = cast(ColumnElement[Any], ResultSQLModel.id)
 SELECT_RESULT_SQLMODEL = (
     select(ResultSQLModel)
-    .order_by(ResultSQLModel.id.asc())
+    .order_by(id_col.asc())
     .limit(50)
     .offset(0)
 )
@@ -328,7 +331,7 @@ async def GET_LIST__bench_repo_pipeline(n: int) -> float:
     """
     fake_result = cached_fake_result_orm(n)
     session = BenchmarkAsyncSession(script=[fake_result])
-    repo = ResultStrictRepo(session=session, default_convert_domain=True)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=True)
 
     t0 = time.perf_counter()
     _ = await repo.get_list(
@@ -379,7 +382,7 @@ async def SCHEMA_CONVERT__baserepo(n: int) -> float:
     """
     rows = cached_result_rows(n)
     fake_session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=fake_session, default_convert_domain=True)
+    repo = ResultStrictRepo(session=cast(AsyncSession, fake_session), default_convert_domain=True)
 
     t0 = time.perf_counter()
     for row in rows:
@@ -415,13 +418,13 @@ async def CREATE_MANY__repo_from_dict(n: int) -> float:
     BaseRepo.create_many(dict 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=session, default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
     payloads = cached_create_payloads_dict(n)
 
     t0 = time.perf_counter()
     await repo.create_many(
         payloads,
-        session=session,
+        session=cast(AsyncSession, session),
         convert_domain=False,
     )
     t1 = time.perf_counter()
@@ -455,13 +458,13 @@ async def CREATE_MANY__repo_from_schema(n: int) -> float:
     BaseRepo.create_many(Pydantic 스키마 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=session, default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
     payloads = cached_create_payloads_schema(n)
 
     t0 = time.perf_counter()
     await repo.create_many(
         payloads,
-        session=session,
+        session=cast(AsyncSession, session),
         convert_domain=False,
     )
     t1 = time.perf_counter()
@@ -496,14 +499,14 @@ async def CREATE_FROM_MODEL__repo(n: int) -> float:
     BaseRepo.create_from_model(ORM 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=session, default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
     objs = cached_create_models(n)
 
     t0 = time.perf_counter()
     for obj in objs:
         await repo.create_from_model(
             obj,
-            session=session,
+            session=cast(AsyncSession, session),
             convert_domain=False,
         )
     t1 = time.perf_counter()
@@ -515,24 +518,20 @@ async def CREATE_FROM_MODEL__repo(n: int) -> float:
 # 시나리오: UPDATE (plain / from_model)
 # -------------------------------------------------------------------
 async def UPDATE__sa_plain(n: int) -> float:
-    """
-    SQLAlchemy:
-    - 각 id에 대해 dict payload로 UPDATE 문 실행
-    - BaseRepo.update 와 동일하게 dict 기반 payload를 사용
-    """
     session = DMLOnlySession()
     payloads = cached_update_payloads_dict(n)
+
+    table = cast(Table, Result.__table__)
 
     t0 = time.perf_counter()
     for i in range(n):
         stmt = (
-            Result.__table__.update()
+            table.update()
             .where(Result.id == i)
             .values(**payloads[i])
         )
         await session.execute(stmt)
     t1 = time.perf_counter()
-
     return t1 - t0
 
 
@@ -541,7 +540,7 @@ async def UPDATE__repo_update(n: int) -> float:
     BaseRepo.update(dict 입력)
     """
     session = DMLOnlySession()
-    repo = ResultStrictRepo(session=session, default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
     payloads = cached_update_payloads_dict(n)
 
     t0 = time.perf_counter()
@@ -550,7 +549,7 @@ async def UPDATE__repo_update(n: int) -> float:
         await repo.update(
             flt,
             update=payloads[i],
-            session=session,
+            session=cast(AsyncSession, session),
         )
     t1 = time.perf_counter()
 
@@ -583,7 +582,7 @@ async def UPDATE_FROM_MODEL__repo(n: int) -> float:
     BaseRepo.update_from_model(ORM + dict 입력)
     """
     session = DMLOnlySession()
-    repo = ResultStrictRepo(session=session, default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
     bases = list(cached_create_models(n))
     payloads = cached_update_payloads_dict(n)
 
@@ -593,7 +592,7 @@ async def UPDATE_FROM_MODEL__repo(n: int) -> float:
         await repo.update_from_model(
             base,
             update=payloads[i],
-            session=session,
+            session=cast(AsyncSession, session),
             convert_domain=False,
         )
     t1 = time.perf_counter()

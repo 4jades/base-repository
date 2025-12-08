@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict
 import pytest
 
-from validator import validate_config_from_attributes_true, validate_schema_base
+from base_repository.validator import validate_config_from_attributes_true, validate_schema_base
 
 
 # Mapping-style configs (ConfigDict behaves like a mapping)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import re
 import sys
+from typing import Any
 
 import pytest
 from sqlalchemy import (
@@ -19,8 +20,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, aliased, relationship
 from sqlalchemy.sql.elements import UnaryExpression
 
-from query.strategies.order_by import OrderByStrategy
-import query.strategies.order_by as order_by_mod
+from base_repository.query.strategies.order_by import OrderByStrategy
+import base_repository.query.strategies.order_by as order_by_mod
 
 
 # Base ORM setup for tests
@@ -596,8 +597,8 @@ def test_apply_raises_when_model_has_no_pk_for_default(monkeypatch) -> None:
     """
     # 1
     class FakeMapper:
-        column_attrs = []
-        primary_key = []
+        column_attrs: list[Any] = []
+        primary_key: list[Any] = []
 
     # 2
     def fake_sa_mapper(_model):
@@ -722,10 +723,10 @@ def test_same_table_none_tables_are_false() -> None:
     """
     # 1
     class X:
-        table = None
+        table: Any | None = None
 
     class Y:
-        table = None
+        table: Any | None = None
 
     # 2
     assert OrderByStrategy._same_table(X(), Y()) is False

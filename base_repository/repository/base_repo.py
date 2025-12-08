@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from collections.abc import Mapping, Sequence
 from typing import Annotated, Any, Generic, cast, get_args
 
@@ -470,7 +471,7 @@ class BaseRepository(Generic[TModel]):
         s = self._resolve_session(session)
         stmt = delete(self.model).where(*flt.where_criteria(self.model))
         res = await s.execute(stmt)
-        return res.rowcount or 0
+        return res.rowcount or 0  # type: ignore[attr-defined]
 
 
     def add(
@@ -529,7 +530,7 @@ class BaseRepository(Generic[TModel]):
         convert_domain: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
         skip_convert: Annotated[bool, Doc("If True, skip domain conversion and return ORM objects as-is.")] = False,
-    ) -> Annotated[list[Any], Doc("Created objects list (Domain/ORM).")]:
+    ) -> Annotated[builtins.list[Any], Doc("Created objects list (Domain/ORM).")]:
         """
         Create multiple rows and `flush()`.
 
@@ -591,7 +592,7 @@ class BaseRepository(Generic[TModel]):
 
         s = self._resolve_session(session)
         res = await s.execute(stmt)
-        return res.rowcount or 0
+        return res.rowcount or 0  # type: ignore[attr-defined]
 
 
     async def update_from_model(

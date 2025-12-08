@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import Integer, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from query.strategies.offset import OffsetStrategy
+from base_repository.query.strategies.offset import OffsetStrategy
 
 
 

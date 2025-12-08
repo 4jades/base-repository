@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 import pytest
 from pydantic import BaseModel, ConfigDict
@@ -222,7 +222,7 @@ async def test_create_many_converts_by_default_and_records_add_all() -> None:
     repo = StrictRepo(cast(AsyncSession, session))
 
     # 2
-    created = await repo.create_many(
+    created_any = await repo.create_many(
         [
             ResultStrictSchema(
                 item_id=1,
@@ -244,6 +244,8 @@ async def test_create_many_converts_by_default_and_records_add_all() -> None:
     )
 
     # 3
+    assert created_any is not None
+    created = cast(list[ResultStrictSchema], created_any)
     assert all(isinstance(c, ResultStrictSchema) for c in created)
     assert [c.item_id for c in created] == [1, 2]
     assert len(session.added_all) == 2
@@ -264,7 +266,7 @@ async def test_create_many_skip_convert_returns_orm_objects() -> None:
     repo = StrictRepo(cast(AsyncSession, session))
 
     # 2
-    created = await repo.create_many(
+    created_any = await repo.create_many(
         [
             ResultStrictSchema(
                 item_id=1,
@@ -279,6 +281,8 @@ async def test_create_many_skip_convert_returns_orm_objects() -> None:
     )
 
     # 3
+    assert created_any is not None
+    created = cast(list[Any], created_any)
     assert len(created) == 1
     assert type(created[0]).__name__ == "Result"
 
@@ -505,7 +509,7 @@ def test_subclass_definition_does_not_call_sa_mapper(monkeypatch: pytest.MonkeyP
     3. Assert sa_mapper was not called and default conversion is enabled.
     """
     # 1
-    import repository.base_repo as base_repo_mod
+    import base_repository.repository.base_repo as base_repo_mod
 
     called = {"count": 0}
 
@@ -718,7 +722,7 @@ def test_schema_to_orm_falls_back_when_mapper_to_orm_not_implemented() -> None:
     3. Call _schema_to_orm(schema) and assert ORM is built via payload path.
     """
     # 1
-    class BadMapper(BaseMapper[AutoIncModel, AutoIncSchema]):
+    class BadMapper(BaseMapper):
         def to_domain(self, orm_object: AutoIncModel) -> AutoIncSchema:
             return AutoIncSchema(pk=orm_object.pk, name=orm_object.name)
 
@@ -749,7 +753,7 @@ def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implem
     3. When mapper fails, assert fallback schema conversion is returned.
     """
     # 1
-    class Mapper(BaseMapper[AutoIncModel, AutoIncSchema]):
+    class Mapper(BaseMapper):
         def __init__(self, fail: bool) -> None:
             self._fail = fail
 
@@ -781,24 +785,39 @@ def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implem
 
 
 
-def test_convert_returns_row_when_schema_missing_or_row_is_none() -> None:
+def test_convert_returns_row_when_schema_missing() -> None:
     """
-    < _convert returns the raw row when schema is missing, or returns None when row is None >
-    1. If mapping_schema is not set, _convert(row, convert_domain=None) must return the ORM row unchanged.
-    2. If row is None, _convert(None, convert_domain=None) must return None (even if schema exists).
+    < _convert returns the raw ORM row when mapping_schema is missing >
+    1. Create a repo that does NOT define mapping_schema.
+    2. Pass a real ORM row into _convert.
+    3. Assert the same object is returned (no conversion path is possible).
     """
     # 1
     class RepoNoSchema(BaseRepository[AutoIncModel]):
         model = AutoIncModel
         filter_class = DummyFilter
+        # NOTE: mapping_schema intentionally omitted
 
     repo_no_schema = RepoNoSchema(cast(AsyncSession, FakeAsyncSession(script=[])))
 
+    # 2
     row = AutoIncModel(pk=1, name="A")
-    out = repo_no_schema._convert(row, convert_domain=None)
+    out = repo_no_schema._convert(row, convert_domain=False)
+
+    # 3
     assert out is row
 
-    # 2
+
+def test_convert_none_row_returns_none_runtime_guard() -> None:
+    """
+    < _convert returns None when row is None (runtime guard branch coverage) >
+    1. Create a repo that defines mapping_schema (conversion-capable repo).
+    2. Call _convert with row=None via cast(Any, None) to reach the guard.
+       - This is intentionally outside the type contract (row: TModel),
+         but validates the defensive runtime behavior.
+    3. Assert None is returned.
+    """
+    # 1
     class RepoWithSchema(BaseRepository[AutoIncModel]):
         model = AutoIncModel
         filter_class = DummyFilter
@@ -806,7 +825,10 @@ def test_convert_returns_row_when_schema_missing_or_row_is_none() -> None:
 
     repo_with_schema = RepoWithSchema(cast(AsyncSession, FakeAsyncSession(script=[])))
 
-    out_none = repo_with_schema._convert(None, convert_domain=None)
+    # 2
+    out_none = repo_with_schema._convert(cast(Any, None), convert_domain=None)
+
+    # 3
     assert out_none is None
 
 
@@ -1097,7 +1119,12 @@ async def test_get_list_cursor_path_calls_limit_when_size_is_provided(monkeypatc
         filter_class = DummyFilter2
         mapping_schema = AutoIncSchema2
 
-    called = {"limit": 0, "size": None}
+
+    class Called(TypedDict):
+        limit: int
+        size: int | None
+        
+    called: Called = {"limit": 0, "size": None}
     orig_limit = ListQuery.limit
 
     def wrapped_limit(self: ListQuery, size: int) -> ListQuery:
@@ -1166,7 +1193,13 @@ async def test_get_list_offset_paging_path_calls_paging_when_page_and_size_are_p
         filter_class = DummyFilter2
         mapping_schema = AutoIncSchema2
 
-    called = {"paging": 0, "page": None, "size": None}
+    class PagingCalled(TypedDict):
+        paging: int
+        page: int | None
+        size: int | None
+
+
+    called: PagingCalled = {"paging": 0, "page": None, "size": None}
     orig_paging = ListQuery.paging
 
     def wrapped_paging(self: ListQuery, *, page: int, size: int) -> ListQuery:

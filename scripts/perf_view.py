@@ -102,7 +102,7 @@ def _plot_table_group(
 ) -> list[str]:
     paths: list[str] = []
 
-    xs_all = set()
+    xs_all: set[int] = set()
     for _, points in series.items():
         xs_all.update(points.keys())
     xs = sorted(xs_all)
@@ -226,13 +226,14 @@ def main() -> None:
 
 
     # One groups
-    for (suite, family, _type), series in sorted(one_groups.items()):
-        base = out_dir / suite / _safe(family) / "one"
-        rels = _plot_one_group(
+    for (suite, family, _type, key_label), table_series in sorted(table_groups.items()):
+        base = out_dir / suite / _safe(family) / "table"
+        rels = _plot_table_group(
             report_root=out_dir,
             out_dir=base,
             title=f"{suite} {family}",
-            series=series,
+            key_label=key_label,
+            series=table_series,
         )
         sections.append(f"<h2>{family}</h2>")
         img_html = []

@@ -8,7 +8,7 @@ from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql.elements import BindParameter
 
-from base_filter import BaseRepoFilter
+from base_repository.base_filter import BaseRepoFilter
 
 
 # SQLAlchemy Base / model definitions for tests

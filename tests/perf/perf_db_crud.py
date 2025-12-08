@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import wraps
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable, Mapping, Protocol, cast
 
 from collections.abc import Sequence
 import statistics
@@ -13,6 +13,8 @@ import pytest
 from sqlalchemy import (
     Integer,
     String,
+    Table,
+    column,
     delete,
     func,
     select,
@@ -89,6 +91,13 @@ class PerfResultSQLModel(SQLModel, table=True):
 
     flag: int
     extra: str
+
+class HasTable(Protocol):
+    __table__: Table
+
+def _table_of(model: type[Any]) -> Table:
+    return cast(HasTable, cast(Any, model)).__table__
+
 
 
 class CommonModel(BaseModel):
@@ -257,11 +266,18 @@ async def run_benchmark_noarg(
     }
 
 
-def print_table(title: str, rows: dict[int, dict[str, float], iter: int], iter:int, key_label: str = "ROW") -> None:
+def print_table(
+    title: str,
+    rows: Mapping[int, Mapping[str, float]],
+    iter: int,
+    *,
+    key_label: str = "ROW",
+) -> None:
     print()
     print(f"=== {title} ===")
     print(f"{key_label:>8} | {'AVG(ms)':>10} | {'P95(ms)':>10} | {'P99(ms)':>10}")
     print("-" * 50)
+
     for key, metrics in rows.items():
         print(
             f"{key:>8} | "
@@ -269,15 +285,17 @@ def print_table(title: str, rows: dict[int, dict[str, float], iter: int], iter:i
             f"{metrics['p95']:>10.4f} | "
             f"{metrics['p99']:>10.4f}"
         )
+
     print()
+    metrics_items: dict[int, dict[str, float]] = {k: dict(v) for k, v in rows.items()}
     record_table(
         suite="db",
         source="tests/perf/perf_db_crud.py",
         scenario=title,
         key_label=key_label,
-        metrics=rows,
+        metrics=metrics_items,
         iter=iter,
-        seed_data_rows_cnt=SEED_DATA_ROWS
+        seed_data_rows_cnt=SEED_DATA_ROWS,
     )
 
 
@@ -467,7 +485,7 @@ async def CREATE_MANY__repo_create_many(n: int, session: AsyncSession) -> float:
     t0 = time.perf_counter()
 
     schemas = [
-        PerfResultSchema(id=None, **make_row_values(i))
+        PerfResultSchema(id=None, **cast(dict[str, Any], make_row_values(i)))
         for i in range(n)
     ]
     await repo.create_many(
@@ -517,7 +535,7 @@ async def CREATE__repo_create(n: int, session: AsyncSession) -> float:
 
     t0 = time.perf_counter()
 
-    schema = PerfResultSchema(id=None, **make_row_values(0))
+    schema = PerfResultSchema(id=None, **cast(dict[str, Any], make_row_values(0)))
     await repo.create(
         data=schema,
         session=session,
@@ -592,11 +610,13 @@ async def UPDATE_MANY__sqlmodel_dirty(n: int, session: AsyncSession) -> float:
     - 대상 row들을 SELECT로 불러와서 value2만 수정 → dirty checking.
     - SQL 한 방 UPDATE가 아니라 row 단위 갱신 성능을 보고 싶은 경우.
     """
+    tbl = _table_of(PerfResultSQLModel)
+    c = tbl.c
     t0 = time.perf_counter()
 
     stmt = (
         sqlm_select(PerfResultSQLModel)
-        .where(PerfResultSQLModel.id <= n)
+        .where(c.id <= n)
     )
     result = await session.execute(stmt)
     rows = result.scalars().all()
@@ -702,11 +722,14 @@ async def READ_PAGE__sqlmodel_offset(page: int, session: AsyncSession) -> float:
     """
     SQLModel select + offset.
     """
+    tbl = _table_of(PerfResultSQLModel)
+    c = tbl.c
+
     offset = (page - 1) * PAGE_SIZE_FOR_PAGE_BENCH
 
     stmt = (
         sqlm_select(PerfResultSQLModel)
-        .order_by(PerfResultSQLModel.id.asc())
+        .order_by(c.id.asc())
         .offset(offset)
         .limit(PAGE_SIZE_FOR_PAGE_BENCH)
     )
@@ -782,19 +805,21 @@ async def COMPLEX_WHERE8__repo(session: AsyncSession) -> float:
 
 @with_read_session()
 async def COMPLEX_WHERE8__sqlmodel(session: AsyncSession) -> float:
+    tbl = _table_of(PerfResultSQLModel)
+    c = tbl.c
     stmt = (
         sqlm_select(PerfResultSQLModel)
         .where(
-            PerfResultSQLModel.id.in_([1, 2, 3, 4]),
-            PerfResultSQLModel.category.in_(["cat-1", "cat-2"]),
-            PerfResultSQLModel.status.in_(["status-1", "status-2"]),
-            PerfResultSQLModel.tag.in_(["tag-0", "tag-1"]),
-            PerfResultSQLModel.group_no.in_([10, 11, 12]),
-            PerfResultSQLModel.value == 100,
-            PerfResultSQLModel.value2 == 1_000_000,
-            PerfResultSQLModel.flag.in_([0, 1]),
+            c.id.in_([1, 2, 3, 4]),
+            c.category.in_(["cat-1", "cat-2"]),
+            c.status.in_(["status-1", "status-2"]),
+            c.tag.in_(["tag-0", "tag-1"]),
+            c.group_no.in_([10, 11, 12]),
+            c.value == 100,
+            c.value2 == 1_000_000,
+            c.flag.in_([0, 1]),
         )
-        .order_by(PerfResultSQLModel.id.asc())
+        .order_by(c.id.asc())
         .limit(1_000)
         .offset(0)
     )
@@ -861,17 +886,19 @@ async def COMPLEX_WHERE3_ORDER3__repo(session: AsyncSession) -> float:
 
 @with_read_session()
 async def COMPLEX_WHERE3_ORDER3__sqlmodel(session: AsyncSession) -> float:
+    tbl = _table_of(PerfResultSQLModel)
+    c = tbl.c
     stmt = (
         sqlm_select(PerfResultSQLModel)
         .where(
-            PerfResultSQLModel.category == "cat-1",
-            PerfResultSQLModel.status == "status-1",
-            PerfResultSQLModel.flag == 1,
+            c.category == "cat-1",
+            c.status == "status-1",
+            c.flag == 1,
         )
         .order_by(
-            PerfResultSQLModel.category.asc(),
-            PerfResultSQLModel.value2.desc(),
-            PerfResultSQLModel.id.asc(),
+            c.category.asc(),
+            c.value2.desc(),
+            c.id.asc(),
         )
         .limit(1_000)
         .offset(0)
@@ -937,17 +964,21 @@ async def COMPLEX_ORDER8__repo(session: AsyncSession) -> float:
 
 @with_read_session()
 async def COMPLEX_ORDER8__sqlmodel(session: AsyncSession) -> float:
+    tbl = _table_of(PerfResultSQLModel)
+    c = tbl.c
+
+    # 2
     stmt = (
         sqlm_select(PerfResultSQLModel)
         .order_by(
-            PerfResultSQLModel.category.asc(),
-            PerfResultSQLModel.status.asc(),
-            PerfResultSQLModel.tag.asc(),
-            PerfResultSQLModel.group_no.asc(),
-            PerfResultSQLModel.flag.desc(),
-            PerfResultSQLModel.value.desc(),
-            PerfResultSQLModel.value2.desc(),
-            PerfResultSQLModel.id.asc(),
+            c.category.asc(),
+            c.status.asc(),
+            c.tag.asc(),
+            c.group_no.asc(),
+            c.flag.desc(),
+            c.value.desc(),
+            c.value2.desc(),
+            c.id.asc(),
         )
         .limit(1_000)
         .offset(0)
@@ -1029,9 +1060,9 @@ async def COUNT_WHERE3__sqlmodel(session: AsyncSession) -> float:
         select(func.count())
         .select_from(PerfResultSQLModel)
         .where(
-            PerfResultSQLModel.category == "cat-1",
-            PerfResultSQLModel.status == "status-1",
-            PerfResultSQLModel.flag == 1,
+            column("category") == "cat-1",
+            column("status") == "status-1",
+            column("flag") == 1,
         )
     )
 
@@ -1049,7 +1080,7 @@ async def COUNT_WHERE3__sqlmodel(session: AsyncSession) -> float:
 async def DELETE__sa_plain(target_id: int, *, session: AsyncSession) -> float:
     t0 = time.perf_counter()
     res = await session.execute(delete(PerfResult).where(PerfResult.id == target_id))
-    _ = res.rowcount or 0
+    _ = res.rowcount or 0 # type: ignore[attr-defined]
     await session.commit()
     t1 = time.perf_counter()
     return t1 - t0

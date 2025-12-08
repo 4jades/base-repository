@@ -1,9 +1,10 @@
 from __future__ import annotations
+from typing import Any
 
-from sqlalchemy import column
+from sqlalchemy import ColumnClause, column
 from sqlalchemy.orm import DeclarativeBase, Mapped, Mapper, mapped_column
 
-from sa_helper import peel_unary, sa_mapper
+from base_repository.sa_helper import peel_unary, sa_mapper
 
 
 # Base ORM setup for tests
@@ -43,7 +44,7 @@ def test_peel_unary_returns_same_expr_if_not_unary() -> None:
     3. Assert the returned object is the same instance.
     """
     # 1
-    col = column("id")
+    col: ColumnClause[Any] = column("id")
 
     # 2
     out = peel_unary(col)
@@ -61,7 +62,7 @@ def test_peel_unary_strips_nested_unary_expressions() -> None:
     4. Assert the returned object is the original base ColumnElement.
     """
     # 1
-    col = column("id")
+    col: ColumnClause[Any] = column("id")
 
     # 2
     expr = col.desc().nulls_last()
