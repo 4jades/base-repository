@@ -1,9 +1,28 @@
+[build-system]
+requires = [
+  "setuptools>=80",
+  "wheel",
+  "setuptools-scm>=8",
+]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "base-repository"
-version = "1.0.1"
-description = "base-repository"
+dynamic = ["version"]
+description = "A repository library that wraps SQLAlchemy and provides built-in CRUD and a query DSL."
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
+authors = [{ name = "jjade", email = "jjades1205@gmail.com" }]
+urls = { Homepage = "https://github.com/4jades/base-repository" }
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "pydantic>=1.7.4",
     "sqlalchemy>=1.4",
@@ -29,6 +48,16 @@ dev = [
     "setuptools>=80.9.0",
     "types-setuptools>=80.9.0.20250822",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "tests.*"]
+
+[tool.setuptools.package-data]
+base_repository = ["py.typed"]
+
+[tool.setuptools_scm]
+# read version on tag
 
 [tool.coverage.run]
 omit = [

@@ -1,0 +1,196 @@
+name: Manual Release to PyPI (label-gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Merged PR number to release from (must target main)"
+        required: true
+        type: number
+      bump:
+        description: "Required PR label must match this (patch|minor|major)"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: pypi-manual-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history and tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR merged to main + required label exists
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECT_BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+
+          # 1) PR 정보 확인 (merged, base branch, merge_commit_sha)
+          PR_JSON="$(curl -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${OWNER_REPO}/pulls/${PR_NUMBER}")"
+
+          python - <<'PY'
+          import json, os, sys
+
+          pr = json.loads(os.environ["PR_JSON"])
+          if pr.get("base", {}).get("ref") != "main":
+            print("ERROR: PR base branch is not main", file=sys.stderr)
+            sys.exit(1)
+
+          if not pr.get("merged"):
+            print("ERROR: PR is not merged", file=sys.stderr)
+            sys.exit(1)
+
+          merge_sha = pr.get("merge_commit_sha")
+          if not merge_sha:
+            print("ERROR: merge_commit_sha missing", file=sys.stderr)
+            sys.exit(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            f.write(f"merge_sha={merge_sha}\n")
+          PY
+        shell: bash
+        env:
+          PR_JSON: ${{ steps.pr.outputs.PR_JSON }}
+
+      - name: Ensure PR merge commit is reachable from current HEAD
+        env:
+          MERGE_SHA: ${{ steps.pr.outputs.merge_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if ! git merge-base --is-ancestor "$MERGE_SHA" HEAD; then
+            echo "ERROR: The PR merge commit is not reachable from the current checked out ref."
+            echo "Run this workflow on the main branch HEAD (or specify the correct PR)."
+            exit 1
+          fi
+
+      - name: Check required PR label matches bump input
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECT_BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+
+          # 2) PR 라벨은 Issues Labels API로 조회 (PR은 issue이기도 함)
+          LABELS_JSON="$(curl -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${OWNER_REPO}/issues/${PR_NUMBER}/labels")"
+
+          python - <<'PY'
+          import json, os, sys
+
+          labels = json.loads(os.environ.get("LABELS_JSON", "[]"))
+          names = {l.get("name", "").lower() for l in labels}
+          expect = os.environ["EXPECT_BUMP"].lower()
+
+          if expect not in {"patch", "minor", "major"}:
+            print("ERROR: invalid bump input", file=sys.stderr)
+            sys.exit(1)
+
+          if expect not in names:
+            print(f"ERROR: Required label '{expect}' not found on PR #{os.environ['PR_NUMBER']}.", file=sys.stderr)
+            print(f"Current labels: {sorted(names)}", file=sys.stderr)
+            sys.exit(1)
+
+          print(f"OK: label '{expect}' found")
+          PY
+        shell: bash
+        env:
+          LABELS_JSON: ${{ steps.pr.outputs.LABELS_JSON }}
+
+      - name: Create and push next version tag
+        id: tag
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+
+          last_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)"
+          if [ -z "$last_tag" ]; then
+            last_ver="0.0.0"
+          else
+            last_ver="${last_tag#v}"
+          fi
+
+          new_ver="$(python - <<PY
+          import re
+          last="${last_ver}"
+          bump="${BUMP}"
+          m=re.match(r"^(\d+)\.(\d+)\.(\d+)$", last)
+          if not m:
+            raise SystemExit(f"invalid last version: {last}")
+          maj, min_, pat = map(int, m.groups())
+          if bump == "major":
+            maj += 1; min_ = 0; pat = 0
+          elif bump == "minor":
+            min_ += 1; pat = 0
+          else:
+            pat += 1
+          print(f"{maj}.{min_}.{pat}")
+          PY
+          )"
+
+          new_tag="v${new_ver}"
+
+          if git rev-parse "$new_tag" >/dev/null 2>&1; then
+            echo "ERROR: Tag already exists: $new_tag"
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$new_tag" -m "Release $new_tag"
+          git push origin "$new_tag"
+
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+          echo "new_ver=$new_ver" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Check distributions
+        run: |
+          python -m pip install --upgrade twine
+          python -m twine check dist/*
+
+      - name: Publish to PyPI (Trusted Publishing via OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
