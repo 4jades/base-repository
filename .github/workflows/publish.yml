@@ -1,4 +1,4 @@
-name: Publish to PyPI (only when PR has release label)
+name: Publish to PyPI (label-gated on main merge)
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (full history and tags)
+      - name: Checkout (with tags)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -30,22 +30,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          # merge commit(SHA)에 연결된 PR 목록 조회
           PR_JSON="$(curl -sS \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls")"
 
+          export PR_JSON
+
           python - <<'PY'
-          import json, os
+          import json, os, sys
 
           prs = json.loads(os.environ.get("PR_JSON", "[]"))
           labels = []
           if prs:
             labels = [l["name"].lower() for l in prs[0].get("labels", [])]
 
-          bump = None
+          bump = ""
           if "major" in labels:
             bump = "major"
           elif "minor" in labels:
@@ -54,26 +55,24 @@ jobs:
             bump = "patch"
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-            f.write(f"bump={bump or ''}\n")
+            f.write(f"bump={bump}\n")
 
           print("labels =", labels)
           print("bump   =", bump)
+
+          # PR이 연결되지 않거나 라벨이 없으면 bump는 빈 문자열로 유지
           PY
-        shell: bash
-        env:
-          PR_JSON: ${{ steps.bump.outputs.PR_JSON }}
 
       - name: Skip if no release label
         if: ${{ steps.bump.outputs.bump == '' }}
         run: |
-          echo "No release label (patch/minor/major) on the merged PR. Skipping publish."
+          echo "No release label (patch/minor/major) found on the merged PR. Skipping publish."
 
       - name: Create and push next version tag
         if: ${{ steps.bump.outputs.bump != '' }}
         id: tag
         run: |
           set -euo pipefail
-
           git fetch --tags --force
 
           last_tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)"
@@ -119,7 +118,7 @@ jobs:
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
           echo "new_ver=$new_ver" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout the release tag (important for setuptools-scm)
+      - name: Checkout release tag (for setuptools-scm)
         if: ${{ steps.bump.outputs.bump != '' }}
         run: |
           git checkout "${{ steps.tag.outputs.new_tag }}"
