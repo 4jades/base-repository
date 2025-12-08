@@ -60,7 +60,7 @@ jobs:
           print("labels =", labels)
           print("bump   =", bump)
 
-          # PR이 연결되지 않거나 라벨이 없으면 bump는 빈 문자열로 유지
+          # PR이 연결되지 않거나 라벨이 없으면 bump는 빈 문자열로 유지..
           PY
 
       - name: Skip if no release label
