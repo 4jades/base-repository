@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapper, DeclarativeBase
 from sqlalchemy.sql import Select
 from typing_extensions import Doc
-
 from base_repository.base_filter import BaseRepoFilter
 from base_repository.base_mapper import BaseMapper
 from base_repository.query.converter import query_to_stmt

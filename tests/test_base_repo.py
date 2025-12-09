@@ -32,10 +32,8 @@ class RFilter(BaseRepoFilter):
 
 
 # Repository with mapping_schema enabled (domain conversion by default)
-class StrictRepo(BaseRepository[Result]):
-    model = Result
+class StrictRepo(BaseRepository[Result, ResultStrictSchema]):
     filter_class = RFilter
-    mapping_schema = ResultStrictSchema
 
 
 
@@ -113,7 +111,7 @@ async def test_execute_select_convert_domain_false_returns_orm() -> None:
 
     # 2
     session = FakeAsyncSession(script=[FakeResult(rows)])
-    repo = StrictRepo(cast(AsyncSession, session))
+    repo = StrictRepo(session=cast(AsyncSession, session))
     got = await repo.get_list(flt=RFilter(tenant_id=1), convert_domain=False)
 
     # 3
@@ -420,9 +418,8 @@ async def test_model_inference_when_model_not_declared() -> None:
     3. Assert repo.model is inferred as Result.
     """
     # 1
-    class NoModelRepo(BaseRepository[Result]):
+    class NoModelRepo(BaseRepository[Result, ResultStrictSchema]):
         filter_class = RFilter
-        mapping_schema = ResultStrictSchema
 
     # 2
     session = FakeAsyncSession()
@@ -532,10 +529,8 @@ def test_subclass_definition_does_not_call_sa_mapper(monkeypatch: pytest.MonkeyP
 
 
 
-    class TmpRepo(BaseRepository[TmpModel]):
-        model = TmpModel
+    class TmpRepo(BaseRepository[TmpModel, TmpSchema]):
         filter_class = RFilter
-        mapping_schema = TmpSchema
 
     # 3
     assert called["count"] == 0
@@ -559,10 +554,8 @@ def test_init_session_warning_cases() -> None:
 
 
 
-    class RepoWithProvider(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class RepoWithProvider(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     s1 = cast(AsyncSession, FakeAsyncSession(script=[]))
     s2 = cast(AsyncSession, FakeAsyncSession(script=[]))
@@ -574,10 +567,8 @@ def test_init_session_warning_cases() -> None:
     assert repo_p.session is s2
 
     # 2
-    class RepoNoProvider(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class RepoNoProvider(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     s3 = cast(AsyncSession, FakeAsyncSession(script=[]))
 
@@ -594,10 +585,8 @@ async def test_get_list_cursor_requires_order_by_then_requires_size() -> None:
     2. With order_by but size=None, get_list must raise about limit(size) requirement.
     """
     # 1
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     repo = Repo(cast(AsyncSession, FakeAsyncSession(script=[FakeResult([])])))
 
@@ -674,10 +663,8 @@ def test_schema_payload_drops_unknown_keys_and_autoinc_pk() -> None:
     2. Assert pk and unknown are removed and known keys remain.
     """
     # 1
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     repo = Repo(cast(AsyncSession, FakeAsyncSession(script=[])))
     payload = repo._schema_payload({"pk": 123, "name": "A", "unknown": "X"})
@@ -697,10 +684,8 @@ def test_schema_payload_from_pydantic_exclude_unset() -> None:
     3. Assert optional unset fields are absent and autoinc pk is absent.
     """
     # 1
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     repo = Repo(cast(AsyncSession, FakeAsyncSession(script=[])))
 
@@ -730,10 +715,8 @@ def test_schema_to_orm_falls_back_when_mapper_to_orm_not_implemented() -> None:
             raise NotImplementedError()
 
     # 2
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
         mapper = BadMapper
 
     repo = Repo(cast(AsyncSession, FakeAsyncSession(script=[])))
@@ -765,10 +748,8 @@ def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implem
         def to_orm(self, domain_object: AutoIncSchema) -> AutoIncModel:
             return AutoIncModel(pk=1, name=domain_object.name)
 
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     # 2
     r1 = Repo(cast(AsyncSession, FakeAsyncSession(script=[])), mapper=Mapper(fail=False))
@@ -818,10 +799,8 @@ def test_convert_none_row_returns_none_runtime_guard() -> None:
     3. Assert None is returned.
     """
     # 1
-    class RepoWithSchema(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class RepoWithSchema(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     repo_with_schema = RepoWithSchema(cast(AsyncSession, FakeAsyncSession(script=[])))
 
@@ -844,18 +823,18 @@ async def test_execute_rejects_non_listquery_via_query_to_stmt() -> None:
     # 1
     from sqlalchemy import insert
 
-    class Repo(BaseRepository[AutoIncModel]):
-        model = AutoIncModel
+    class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
-        mapping_schema = AutoIncSchema
 
     repo = Repo(cast(AsyncSession, FakeAsyncSession(script=[FakeResult([])])))
 
     # 2
     # 3
-    with pytest.raises(TypeError, match="Unsupported query/statement type"):
-        await repo.execute(insert(AutoIncModel).values(name="A"))  # type: ignore[arg-type]
 
+    stmt = insert(AutoIncModel).values(name="A")
+
+    with pytest.raises(TypeError, match="Unsupported query/statement type"):
+        await repo.execute(cast(Any, stmt))
 
 
 @pytest.mark.asyncio
@@ -916,8 +895,7 @@ def test_init_mapping_schema_param_validates_schema_against_model_and_enables_de
         pk: int | None = None
 
     # 2
-    class Repo(BaseRepository[AutoIncModel2]):
-        model = AutoIncModel2
+    class Repo(BaseRepository[AutoIncModel2, AutoIncSchema2]):
         filter_class = DummyFilter2
 
     # 3
@@ -932,7 +910,7 @@ def test_init_mapping_schema_param_validates_schema_against_model_and_enables_de
 
     # 4
     s = cast(AsyncSession, FakeAsyncSession(script=[]))
-    repo = Repo(s, mapping_schema=AutoIncSchema2)
+    repo = Repo(s)
 
     # 5
     assert called["n"] == 1
@@ -974,10 +952,8 @@ def test_init_default_convert_domain_override_assigns_and_disables_conversion_ev
     class DummyFilter2(BaseRepoFilter):
         pk: int | None = None
 
-    class Repo(BaseRepository[AutoIncModel2]):
-        model = AutoIncModel2
+    class Repo(BaseRepository[AutoIncModel2, AutoIncSchema2]):
         filter_class = DummyFilter2
-        mapping_schema = AutoIncSchema2
 
     # 2
     s = cast(AsyncSession, FakeAsyncSession(script=[]))
@@ -1025,10 +1001,8 @@ def test_init_rejects_non_base_mapper_instance_with_clear_type_error() -> None:
     class DummyFilter2(BaseRepoFilter):
         pk: int | None = None
 
-    class Repo(BaseRepository[AutoIncModel2]):
-        model = AutoIncModel2
+    class Repo(BaseRepository[AutoIncModel2, AutoIncSchema2]):
         filter_class = DummyFilter2
-        mapping_schema = AutoIncSchema2
 
     # 2
     s = cast(AsyncSession, FakeAsyncSession(script=[]))
@@ -1114,10 +1088,8 @@ async def test_get_list_cursor_path_calls_limit_when_size_is_provided(monkeypatc
 
 
 
-    class Repo(BaseRepository[AutoIncModel2]):
-        model = AutoIncModel2
+    class Repo(BaseRepository[AutoIncModel2, AutoIncSchema2]):
         filter_class = DummyFilter2
-        mapping_schema = AutoIncSchema2
 
 
     class Called(TypedDict):
@@ -1188,10 +1160,8 @@ async def test_get_list_offset_paging_path_calls_paging_when_page_and_size_are_p
 
 
 
-    class Repo(BaseRepository[AutoIncModel2]):
-        model = AutoIncModel2
+    class Repo(BaseRepository[AutoIncModel2, AutoIncSchema2]):
         filter_class = DummyFilter2
-        mapping_schema = AutoIncSchema2
 
     class PagingCalled(TypedDict):
         paging: int
@@ -1265,8 +1235,7 @@ def test_validate_schema_against_model_raises_type_error_when_required_fields_ar
 
 
 
-    class Repo(BaseRepository[Model]):
-        model = Model
+    class Repo(BaseRepository[Model, BadSchema]):
         filter_class = DummyFilter2
 
     # 3
@@ -1277,4 +1246,25 @@ def test_validate_schema_against_model_raises_type_error_when_required_fields_ar
         TypeError,
         match=r"\[Strict\].*missing=.*missing_field.*model=Model",
     ):
-        _ = Repo(s, mapping_schema=BadSchema)
+        _ = Repo(s)
+
+
+
+def test_init_subclass_skips_bases_without_generic_args() -> None:
+    """
+    < __init_subclass__ skips non-generic bases in __orig_bases__ >
+    1. Define a plain, non-generic base class.
+    2. Define a Repo subclass that inherits from BaseRepository[...] and the plain base.
+    3. Assert that model and mapping_schema are still inferred from the generic base.
+    """
+    # 1
+    class PlainBase:
+        pass
+
+    # 2
+    class RepoWithPlainBase(BaseRepository[Result, ResultStrictSchema], PlainBase):
+        filter_class = RFilter
+
+    # 3
+    assert getattr(RepoWithPlainBase, "model") is Result
+    assert getattr(RepoWithPlainBase, "mapping_schema") is ResultStrictSchema

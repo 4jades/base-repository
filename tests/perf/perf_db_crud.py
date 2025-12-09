@@ -159,9 +159,8 @@ class PerfResultRangeFilter(BaseRepoFilter):
         return crit
 
 
-class PerfResultRepo(BaseRepository[PerfResult]):
+class PerfResultRepo(BaseRepository[PerfResult, PerfResultSchema]):
     filter_class = PerfResultFilter
-    mapping_schema = PerfResultSchema
 
 
 # ===================================================================
@@ -344,6 +343,7 @@ def cleanup_inserted_rows(model):
     return decorator
 
 
+
 def with_read_session():
     """
     읽기/UPDATE 벤치마크용 데코레이터.
@@ -354,7 +354,7 @@ def with_read_session():
     def decorator(fn):
         @wraps(fn)
         async def wrapper(*args, **kwargs):
-            session: AsyncSession = perf_session_provider.get_session()
+            session: AsyncSession = perf_session_provider.get_session() # type: ignore[annotation-unchecked]
 
             try:
                 duration = await fn(*args, session=session, **kwargs)

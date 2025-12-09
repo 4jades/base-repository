@@ -32,9 +32,8 @@ class ResultFilter(BaseRepoFilter):
     checkup_id: int | None = None
 
 
-class ResultStrictRepo(BaseRepository[Result]):
+class ResultStrictRepo(BaseRepository[Result, ResultStrictSchema]):
     filter_class = ResultFilter
-    mapping_schema = ResultStrictSchema
 
 
 # -------------------------------------------------------------------
