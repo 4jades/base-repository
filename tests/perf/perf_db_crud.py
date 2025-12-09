@@ -447,7 +447,7 @@ async def GET__repo_get(target_id: int, session: AsyncSession) -> float:
     row = await repo.get(
         flt=flt,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = row is not None
     t1 = time.perf_counter()
@@ -662,7 +662,7 @@ async def READ_PAGE__repo_offset(page: int, session: AsyncSession) -> float:
         page=page,
         size=PAGE_SIZE_FOR_PAGE_BENCH,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = len(rows)
     t1 = time.perf_counter()
@@ -709,7 +709,7 @@ async def READ_PAGE__repo_keyset(page: int, session: AsyncSession) -> float:
         cursor=cursor,
         size=PAGE_SIZE_FOR_PAGE_BENCH,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = len(rows)
     t1 = time.perf_counter()
@@ -796,7 +796,7 @@ async def COMPLEX_WHERE8__repo(session: AsyncSession) -> float:
         page=1,
         size=1_000,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = len(rows)
     t1 = time.perf_counter()
@@ -877,7 +877,7 @@ async def COMPLEX_WHERE3_ORDER3__repo(session: AsyncSession) -> float:
         page=1,
         size=1_000,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = len(rows)
     t1 = time.perf_counter()
@@ -955,7 +955,7 @@ async def COMPLEX_ORDER8__repo(session: AsyncSession) -> float:
         page=1,
         size=1_000,
         session=session,
-        convert_domain=False,
+        convert_schema=False,
     )
     _ = len(rows)
     t1 = time.perf_counter()

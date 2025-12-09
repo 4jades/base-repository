@@ -25,7 +25,7 @@ class BaseRepository(Generic[TModel, TSchema]):
     mapping_schema: type[TSchema] | None
     filter_class: type[BaseRepoFilter]
     mapper: type[BaseMapper] | None
-    _default_convert_domain: bool
+    _default_convert_schema: bool
 
     # =========================
     # instance attributes
@@ -44,7 +44,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         session: AsyncSession | None = ...,
         *,
         mapper: BaseMapper | None = ...,
-        default_convert_domain: bool | None = ...,
+        default_convert_schema: bool | None = ...,
     ) -> None: ...
 
     # =========================
@@ -76,7 +76,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         row: TModel,
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
     ) -> TModel: ...
 
     @overload
@@ -84,7 +84,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         row: TModel,
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
     ) -> TPydanticSchema: ...
 
     @overload
@@ -92,7 +92,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         row: TModel,
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
     ) -> TModel: ...
 
     @overload
@@ -100,7 +100,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         row: TModel,
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
     ) -> TPydanticSchema: ...
 
     @overload
@@ -108,7 +108,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         row: TModel,
         *,
-        convert_domain: bool,
+        convert_schema: bool,
     ) -> TModel | TPydanticSchema: ...
 
     # =========================
@@ -125,7 +125,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: QueryOrStmt[TModel],
         *,
         session: AsyncSession | None = ...,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
     ) -> List[TModel]: ...
 
     @overload
@@ -134,7 +134,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: QueryOrStmt[TModel],
         *,
         session: AsyncSession | None = ...,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
     ) -> List[TPydanticSchema]: ...
 
     @overload
@@ -143,7 +143,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: QueryOrStmt[TModel],
         *,
         session: AsyncSession | None = ...,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
     ) -> List[TModel]: ...
 
     @overload
@@ -152,7 +152,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: QueryOrStmt[TModel],
         *,
         session: AsyncSession | None = ...,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
     ) -> List[TPydanticSchema]: ...
 
     @overload
@@ -161,7 +161,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: QueryOrStmt[TModel],
         *,
         session: AsyncSession | None = ...,
-        convert_domain: bool,
+        convert_schema: bool,
     ) -> List[TModel] | List[TPydanticSchema]: ...
 
     # =========================
@@ -177,7 +177,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: int | None = ...,
         size: int | None = ...,
         session: AsyncSession | None = ...,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
     ) -> List[TModel]: ...
 
     @overload
@@ -190,7 +190,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: int | None = ...,
         size: int | None = ...,
         session: AsyncSession | None = ...,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
     ) -> List[TPydanticSchema]: ...
 
     @overload
@@ -203,7 +203,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: int | None = ...,
         size: int | None = ...,
         session: AsyncSession | None = ...,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
     ) -> List[TModel]: ...
 
     @overload
@@ -216,7 +216,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: int | None = ...,
         size: int | None = ...,
         session: AsyncSession | None = ...,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
     ) -> List[TPydanticSchema]: ...
 
     @overload
@@ -229,7 +229,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: int | None = ...,
         size: int | None = ...,
         session: AsyncSession | None = ...,
-        convert_domain: bool,
+        convert_schema: bool,
     ) -> List[TModel] | List[TPydanticSchema]: ...
 
     # =========================
@@ -240,7 +240,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
     ) -> TModel | None: ...
 
@@ -249,7 +249,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema | None: ...
 
@@ -258,7 +258,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
     ) -> TModel | None: ...
 
@@ -267,7 +267,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema | None: ...
 
@@ -276,7 +276,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
     ) -> TModel | TPydanticSchema | None: ...
 
@@ -288,7 +288,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -297,7 +297,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -306,7 +306,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -315,7 +315,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -324,7 +324,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         flt: BaseRepoFilter,
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
     ) -> TModel | TPydanticSchema: ...
 
@@ -350,7 +350,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         data: BaseModel | Mapping[str, Any],
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -359,7 +359,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         data: BaseModel | Mapping[str, Any],
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -368,7 +368,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         data: BaseModel | Mapping[str, Any],
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -377,7 +377,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         data: BaseModel | Mapping[str, Any],
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -386,7 +386,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         data: BaseModel | Mapping[str, Any],
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
     ) -> TModel | TPydanticSchema: ...
 
@@ -398,7 +398,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
         skip_convert: bool = ...,
     ) -> List[TModel]: ...
@@ -408,7 +408,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
         skip_convert: Literal[True],
     ) -> List[TModel]: ...
@@ -418,7 +418,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
         skip_convert: Literal[False] = ...,
     ) -> List[TPydanticSchema]: ...
@@ -428,7 +428,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
         skip_convert: Literal[False] = ...,
     ) -> List[TModel]: ...
@@ -438,7 +438,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
         skip_convert: Literal[False] = ...,
     ) -> List[TPydanticSchema]: ...
@@ -448,7 +448,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         items: Sequence[BaseModel | Mapping[str, Any]],
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
         skip_convert: Literal[False] = ...,
     ) -> List[TModel] | List[TPydanticSchema]: ...
@@ -461,7 +461,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, NoSchema]",
         obj: TModel,
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -470,7 +470,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         obj: TModel,
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -479,7 +479,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         obj: TModel,
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -488,7 +488,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         obj: TModel,
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -497,7 +497,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self: "BaseRepository[TModel, TPydanticSchema]",
         obj: TModel,
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
     ) -> TModel | TPydanticSchema: ...
 
@@ -520,7 +520,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: TModel,
         update: Mapping[str, Any] | BaseModel,
         *,
-        convert_domain: bool | None = ...,
+        convert_schema: bool | None = ...,
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -530,7 +530,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: TModel,
         update: Mapping[str, Any] | BaseModel,
         *,
-        convert_domain: None = ...,
+        convert_schema: None = ...,
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -540,7 +540,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: TModel,
         update: Mapping[str, Any] | BaseModel,
         *,
-        convert_domain: Literal[False],
+        convert_schema: Literal[False],
         session: AsyncSession | None = ...,
     ) -> TModel: ...
 
@@ -550,7 +550,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: TModel,
         update: Mapping[str, Any] | BaseModel,
         *,
-        convert_domain: Literal[True],
+        convert_schema: Literal[True],
         session: AsyncSession | None = ...,
     ) -> TPydanticSchema: ...
 
@@ -560,6 +560,6 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: TModel,
         update: Mapping[str, Any] | BaseModel,
         *,
-        convert_domain: bool,
+        convert_schema: bool,
         session: AsyncSession | None = ...,
     ) -> TModel | TPydanticSchema: ...

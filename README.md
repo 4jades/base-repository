@@ -113,7 +113,7 @@ created = await repo.create({"name": "Alice", "email": "a@test.com"})
 
 # Get one
 user = await repo.get(UserFilter(name=["Alice", "Bob"]))
-user_orm = await repo.get(UserFilter(name="Alice"), convert_domain=False)
+user_orm = await repo.get(UserFilter(name="Alice"), convert_schema=False)
 
 # List (OFFSET paging)
 q = (

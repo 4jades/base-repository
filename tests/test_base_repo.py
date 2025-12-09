@@ -97,11 +97,11 @@ async def test_execute_select_listquery_returns_list_and_converts_by_default() -
 
 
 @pytest.mark.asyncio
-async def test_execute_select_convert_domain_false_returns_orm() -> None:
+async def test_execute_select_convert_schema_false_returns_orm() -> None:
     """
-    < convert_domain=False returns raw ORM rows >
+    < convert_schema=False returns raw ORM rows >
     1. Prepare a single ORM row.
-    2. Call get_list(..., convert_domain=False).
+    2. Call get_list(..., convert_schema=False).
     3. Assert the returned item is an ORM instance, not a schema object.
     """
     # 1
@@ -112,7 +112,7 @@ async def test_execute_select_convert_domain_false_returns_orm() -> None:
     # 2
     session = FakeAsyncSession(script=[FakeResult(rows)])
     repo = StrictRepo(session=cast(AsyncSession, session))
-    got = await repo.get_list(flt=RFilter(tenant_id=1), convert_domain=False)
+    got = await repo.get_list(flt=RFilter(tenant_id=1), convert_schema=False)
 
     # 3
     assert type(got[0]).__name__ == "Result"
@@ -287,11 +287,11 @@ async def test_create_many_skip_convert_returns_orm_objects() -> None:
 
 
 @pytest.mark.asyncio
-async def test_default_convert_domain_guard_at_init() -> None:
+async def test_default_convert_schema_guard_at_init() -> None:
     """
-    < default_convert_domain=True without mapping_schema raises ValueError >
+    < default_convert_schema=True without mapping_schema raises ValueError >
     1. Define a repository without mapping_schema.
-    2. Instantiate with default_convert_domain=True.
+    2. Instantiate with default_convert_schema=True.
     3. Assert ValueError is raised.
     """
     # 1
@@ -304,7 +304,7 @@ async def test_default_convert_domain_guard_at_init() -> None:
 
     # 3
     with pytest.raises(ValueError):
-        _ = NoSchemaRepo(cast(AsyncSession, session), default_convert_domain=True)
+        _ = NoSchemaRepo(cast(AsyncSession, session), default_convert_schema=True)
 
 
 
@@ -456,7 +456,7 @@ async def test_update_from_model_dirty_check_and_flush() -> None:
     after = await repo.update_from_model(
         base=base,
         update={"result_value": "Z"},
-        convert_domain=True,
+        convert_schema=True,
     )
 
     # 3
@@ -534,7 +534,7 @@ def test_subclass_definition_does_not_call_sa_mapper(monkeypatch: pytest.MonkeyP
 
     # 3
     assert called["count"] == 0
-    assert TmpRepo._default_convert_domain is True
+    assert TmpRepo._default_convert_schema is True
 
 
 
@@ -753,13 +753,13 @@ def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implem
 
     # 2
     r1 = Repo(cast(AsyncSession, FakeAsyncSession(script=[])), mapper=Mapper(fail=False))
-    out1 = r1._convert(AutoIncModel(pk=1, name="A"), convert_domain=None)
+    out1 = r1._convert(AutoIncModel(pk=1, name="A"), convert_schema=None)
     assert isinstance(out1, AutoIncSchema)
     assert out1.pk == 999
 
     # 3
     r2 = Repo(cast(AsyncSession, FakeAsyncSession(script=[])), mapper=Mapper(fail=True))
-    out2 = r2._convert(AutoIncModel(pk=2, name="B"), convert_domain=None)
+    out2 = r2._convert(AutoIncModel(pk=2, name="B"), convert_schema=None)
     assert isinstance(out2, AutoIncSchema)
     assert out2.pk == 2
     assert out2.name == "B"
@@ -783,7 +783,7 @@ def test_convert_returns_row_when_schema_missing() -> None:
 
     # 2
     row = AutoIncModel(pk=1, name="A")
-    out = repo_no_schema._convert(row, convert_domain=False)
+    out = repo_no_schema._convert(row, convert_schema=False)
 
     # 3
     assert out is row
@@ -805,7 +805,7 @@ def test_convert_none_row_returns_none_runtime_guard() -> None:
     repo_with_schema = RepoWithSchema(cast(AsyncSession, FakeAsyncSession(script=[])))
 
     # 2
-    out_none = repo_with_schema._convert(cast(Any, None), convert_domain=None)
+    out_none = repo_with_schema._convert(cast(Any, None), convert_schema=None)
 
     # 3
     assert out_none is None
@@ -915,16 +915,16 @@ def test_init_mapping_schema_param_validates_schema_against_model_and_enables_de
     # 5
     assert called["n"] == 1
     assert repo.mapping_schema is AutoIncSchema2
-    assert repo._default_convert_domain is True
+    assert repo._default_convert_schema is True
 
 
 
-def test_init_default_convert_domain_override_assigns_and_disables_conversion_even_when_schema_exists() -> None:
+def test_init_default_convert_schema_override_assigns_and_disables_conversion_even_when_schema_exists() -> None:
     """
-    < default_convert_domain override at init disables conversion even when schema exists >
+    < default_convert_schema override at init disables conversion even when schema exists >
     1. Define a Repo with class-level mapping_schema.
-    2. Instantiate with default_convert_domain=False.
-    3. Assert _default_convert_domain is False and _convert returns raw ORM row.
+    2. Instantiate with default_convert_schema=False.
+    3. Assert _default_convert_schema is False and _convert returns raw ORM row.
     """
     # 1
     class Base2(DeclarativeBase):
@@ -957,13 +957,13 @@ def test_init_default_convert_domain_override_assigns_and_disables_conversion_ev
 
     # 2
     s = cast(AsyncSession, FakeAsyncSession(script=[]))
-    repo = Repo(s, default_convert_domain=False)
+    repo = Repo(s, default_convert_schema=False)
 
     # 3
-    assert repo._default_convert_domain is False
+    assert repo._default_convert_schema is False
 
     row = AutoIncModel2(pk=1, name="A")
-    out = repo._convert(row, convert_domain=None)
+    out = repo._convert(row, convert_schema=None)
     assert out is row
 
 

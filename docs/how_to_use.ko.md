@@ -78,7 +78,7 @@ class UserRepo(BaseRepository[User]):
 옵션
 
 * `mapper: type[BaseMapper] | None` 제공 시, 도메인↔ORM 변환 규칙을 커스터마이징
-* 인스턴스 생성 시 `mapping_schema`, `mapper`, `default_convert_domain`를 덮어쓸 수 있음
+* 인스턴스 생성 시 `mapping_schema`, `mapper`, `default_convert_schema`를 덮어쓸 수 있음
 
 ---
 
@@ -176,7 +176,7 @@ PK 처리 규칙
 ```python
 # 단건
 row = await repo.get(UserFilter(name="Alice"))  # 기본: 도메인 반환 (mapping_schema 설정 시)
-row_raw = await repo.get(UserFilter(name="Alice"), convert_domain=False)  # ORM 반환
+row_raw = await repo.get(UserFilter(name="Alice"), convert_schema=False)  # ORM 반환
 ```
 
 ---
@@ -355,7 +355,7 @@ cnt = await repo.count(UserFilter(name="Alice"))
 updated = await repo.update(UserFilter(name="Bob"), {"email": "bob@new"})
 
 # 영속 객체 Dirty Checking
-obj = await repo.get(UserFilter(name="Alice"), convert_domain=False)
+obj = await repo.get(UserFilter(name="Alice"), convert_schema=False)
 updated_domain = await repo.update_from_model(obj, {"email": "alice@new"})
 ```
 
@@ -385,16 +385,16 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * 조회 DSL 시작점.
 
-* `execute(q_or_stmt, *, session=None, convert_domain=None)`
+* `execute(q_or_stmt, *, session=None, convert_schema=None)`
 
   * `ListQuery` 또는 statement를 실행합니다.
   * SELECT는 항상 `list`를 반환합니다.
 
-* `get(flt, *, convert_domain=None, session=None)` / `get_or_fail(...)`
+* `get(flt, *, convert_schema=None, session=None)` / `get_or_fail(...)`
 
   * 단건 조회.
 
-* `get_list(*, flt=None, order_by=None, cursor=None, page=None, size=None, session=None, convert_domain=None)`
+* `get_list(*, flt=None, order_by=None, cursor=None, page=None, size=None, session=None, convert_schema=None)`
 
   * 편의 함수. 내부에서 `ListQuery`를 조립해 `execute()`까지 수행합니다.
 
@@ -406,7 +406,7 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * 세션에 추가만 합니다. flush/commit은 호출자 책임입니다.
 
-* `create(data, *, session=None, convert_domain=None)` / `create_many(items, *, session=None, convert_domain=None)` / `create_from_model(obj, *, session=None, convert_domain=None)`
+* `create(data, *, session=None, convert_schema=None)` / `create_many(items, *, session=None, convert_schema=None)` / `create_from_model(obj, *, session=None, convert_schema=None)`
 
   * 삽입 + flush까지 수행합니다.
   * `create/create_many`는 autoincrement PK 입력을 무시합니다.
@@ -416,7 +416,7 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * 단일 UPDATE SQL로 일괄 수정합니다. 반환: 수정 row 수(rowcount).
 
-* `update_from_model(base, update, *, session=None, convert_domain=None)`
+* `update_from_model(base, update, *, session=None, convert_schema=None)`
 
   * 영속 객체에 값을 적용하고 `flush()`합니다. 반환: 도메인 또는 ORM.
 
@@ -480,7 +480,7 @@ class UserFilter(BaseRepoFilter):
 ## 6) 매핑(도메인 변환) 옵션
 
 * `mapping_schema` 지정 시 기본 반환은 Domain(Pydantic)
-* `convert_domain=False`로 ORM 반환 가능
+* `convert_schema=False`로 ORM 반환 가능
 * `BaseMapper`를 지정하면 도메인↔ORM 변환을 커스터마이즈
 
 예시
