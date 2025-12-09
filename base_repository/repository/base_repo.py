@@ -31,7 +31,7 @@ class BaseRepository(Generic[TModel, TSchema]):
     - **Schema validation (Strict: required subset)**: when `mapping_schema` is set, its *required* fields must exist on
     the model's **columns (column_attrs)**. (required fields set ⊆ column key set)
     - **Conversion priority**:
-        1) If `mapper(BaseMapper)` is provided, `to_domain` / `to_orm` is used first
+        1) If `mapper(BaseMapper)` is provided, `to_schema` / `to_orm` is used first
         2) Otherwise, convert via Pydantic `model_validate(...)`
         (`mapping_schema.model_config.from_attributes=True` is enforced by `validate_schema_base()`.)
     """
@@ -49,7 +49,7 @@ class BaseRepository(Generic[TModel, TSchema]):
     ]
     mapping_schema: Annotated[
         type[TSchema] | None,
-        Doc("Pydantic schema used for ORM↔Domain conversion. Must pass 'column-only' validation rules."),
+        Doc("Pydantic schema used for ORM↔schema conversion. Must pass 'column-only' validation rules."),
     ] = None
     filter_class: Annotated[
         type[BaseRepoFilter],
@@ -57,11 +57,11 @@ class BaseRepository(Generic[TModel, TSchema]):
     ]
     mapper: Annotated[
         type[BaseMapper[TModel, TSchema]] | None,
-        Doc("Optional mapper class. If provided, it will take precedence for domain/ORM conversions."),
+        Doc("Optional mapper class. If provided, it will take precedence for schema/ORM conversions."),
     ] = None
     _default_convert_schema: Annotated[
         bool,
-        Doc("Default return type flag. True returns Domain(Pydantic) by default, False returns ORM objects."),
+        Doc("Default return type flag. True returns schema(Pydantic) by default, False returns ORM objects."),
     ] = False
 
 
@@ -126,7 +126,7 @@ class BaseRepository(Generic[TModel, TSchema]):
             bool | None,
             Doc(
                 "Default return type when the caller does not specify convert_schema. "
-                "True=Domain, False=ORM. If None, use the class default."
+                "True=schema, False=ORM. If None, use the class default."
             ),
         ] = None,
     ):
@@ -270,7 +270,7 @@ class BaseRepository(Generic[TModel, TSchema]):
 
     def _schema_to_orm(
         self,
-        data: Annotated[BaseModel | Mapping[str, Any], Doc("Domain(Pydantic) or mapping input.")],
+        data: Annotated[BaseModel | Mapping[str, Any], Doc("schema(Pydantic) or mapping input.")],
     ) -> Annotated[TModel, Doc("Final ORM model instance.")]:
         """
         Convert input data into an **ORM model instance**.
@@ -298,13 +298,13 @@ class BaseRepository(Generic[TModel, TSchema]):
         convert_schema: bool | None = None
     ) -> TSchema | TModel:
         """
-        Convert ORM → domain (Pydantic).
+        Convert ORM → schema (Pydantic).
 
         Rules
         -----
         - If `convert_schema` is None, uses `_default_convert_schema`
         - Conversion happens only when: effective=True and row is not None and `mapping_schema` exists
-        - Mapper(to_domain) first; if not implemented, fall back to Pydantic `model_validate(...)`
+        - Mapper(to_schema) first; if not implemented, fall back to Pydantic `model_validate(...)`
         (from_attributes is enforced via `mapping_schema.model_config`)
         """
         effective = self._default_convert_schema if convert_schema is None else convert_schema
@@ -314,7 +314,7 @@ class BaseRepository(Generic[TModel, TSchema]):
 
         try:
             if self._mapper_instance:
-                return self._mapper_instance.to_domain(row)
+                return self._mapper_instance.to_schema(row)
         except NotImplementedError:
             pass
 
@@ -341,10 +341,10 @@ class BaseRepository(Generic[TModel, TSchema]):
         q_or_stmt: Annotated[QueryOrStmt[TModel], Doc("ListQuery or SQLAlchemy Core statement.")],
         *,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag. None uses default.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag. None uses default.")] = None,
     ) -> Any:
         """
-        Execute a `ListQuery` or a SQLAlchemy statement and return results in the final shape (domain/ORM).
+        Execute a `ListQuery` or a SQLAlchemy statement and return results in the final shape (schema/ORM).
         - SELECT always returns a `list`. (Use `get()` for single-row reads.)
         """
         stmt = query_to_stmt(q_or_stmt)  # ListQuery -> Select
@@ -365,7 +365,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         page: Annotated[int | None, Doc("Offset paging: page number (>=1).")] = None,
         size: Annotated[int | None, Doc("Common page size for offset/cursor (>=1).")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
     ) -> Any:
         """
         Convenience method: builds a ListQuery internally and executes it.
@@ -399,9 +399,9 @@ class BaseRepository(Generic[TModel, TSchema]):
         self,
         flt: Annotated[BaseRepoFilter, Doc("WHERE filter for single-row lookup.")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
-    ) -> Annotated[Any | None, Doc("Returns ORM/Domain object if found, otherwise None.")]:
+    ) -> Annotated[Any | None, Doc("Returns ORM/schema object if found, otherwise None.")]:
         """
         Get a single row. Returns the first matching row.
         """
@@ -420,7 +420,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self,
         flt: Annotated[BaseRepoFilter, Doc("WHERE filter for required single-row lookup.")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
     ) -> Annotated[Any, Doc("Always returns an object; raises ValueError if not found.")]:
         """
@@ -501,7 +501,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self,
         data: Annotated[BaseModel | Mapping[str, Any], Doc("Pydantic schema or dict/mapping.")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
     ) -> Any:
         """
@@ -511,7 +511,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         -----
         - For Pydantic schema input, validation is handled by Pydantic
         - Autoincrement PK values from the client are ignored
-        - Return type is Domain/ORM depending on configuration
+        - Return type is schema/ORM depending on configuration
         """
         s = self._resolve_session(session)
 
@@ -525,10 +525,10 @@ class BaseRepository(Generic[TModel, TSchema]):
         self,
         items: Annotated[Sequence[BaseModel | Mapping[str, Any]], Doc("Batch create input (each item is schema or dict).")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
-        skip_convert: Annotated[bool, Doc("If True, skip domain conversion and return ORM objects as-is.")] = False,
-    ) -> Annotated[List[Any], Doc("Created objects list (Domain/ORM).")]:
+        skip_convert: Annotated[bool, Doc("If True, skip schema conversion and return ORM objects as-is.")] = False,
+    ) -> Annotated[List[Any], Doc("Created objects list (schema/ORM).")]:
         """
         Create multiple rows and `flush()`.
 
@@ -549,7 +549,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         self,
         obj: Annotated[TModel, Doc("A fully constructed ORM model instance.")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
     ) -> Any:
         """
@@ -598,7 +598,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         base: Annotated[TModel, Doc("A persistent ORM object in the session (Dirty Checking target).")],
         update: Annotated[Mapping[str, Any] | BaseModel, Doc("Values to update (schema or dict). Sanitized to columns-only.")],
         *,
-        convert_schema: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
+        convert_schema: Annotated[bool | None, Doc("Per-call schema conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
     ) -> Any:
         """

@@ -142,7 +142,7 @@ created_many = await repo.create_many(
     ]
 )
 
-# Create many (skip domain conversion -> ORM list)
+# Create many (skip schema conversion -> ORM list)
 created_many_orm = await repo.create_many(
     [
         {"name": "Alice", "email": "a@test.com"},

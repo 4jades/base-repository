@@ -20,8 +20,6 @@ class NoSchema:
 TModel = TypeVar("TModel", bound=DeclarativeBase)
 TPydanticSchema = TypeVar("TPydanticSchema", bound=BaseModel)
 TSchema = TypeVar("TSchema", bound=BaseModel | NoSchema, default=NoSchema)
-# If we want to treat the domain type as a generic as well, consider this.
-# It’s likely a trade-off between DX and type safety.
 
 
 # If you add more query/statement types beyond ListQuery, extend this union type.

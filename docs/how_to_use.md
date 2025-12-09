@@ -26,7 +26,7 @@
   - [4.1 Repository Instance Methods](#41-repository-instance-methods)
   - [4.2 ListQuery Chaining Methods](#42-listquery-chaining-methods)
 - [5) BaseRepoFilter](#5-baserepofilter)
-- [6) Mapping (Domain Conversion) Options](#6-mapping-domain-conversion-options)
+- [6) Mapping (schema Conversion) Options](#6-mapping-schema-conversion-options)
   - [6.1 Schema Validation Behavior When Using a Mapper](#61-schema-validation-behavior-when-using-a-mapper)
 - [7) Performance Tests](#7-performance-tests)
 
@@ -70,14 +70,13 @@ class UserFilter(BaseRepoFilter):
     id: int | None = None
     name: str | None = None
 
-class UserRepo(BaseRepository[User]):
+class UserRepo(BaseRepository[User, UserSchema]): # (default) enables Schema(UserSchema) return by default
     filter_class = UserFilter
-    mapping_schema = UserSchema  # (default) enables Domain(UserSchema) return by default
 ```
 
 Options
 
-* If you provide `mapper: type[BaseMapper] | None`, you can customize Domain ↔ ORM conversion rules.
+* If you provide `mapper: type[BaseMapper] | None`, you can customize Schema ↔ ORM conversion rules.
 * At instance construction time, you can override `mapping_schema`, `mapper`, and `default_convert_schema`.
 
 ---
@@ -174,7 +173,7 @@ PK handling rules
 ## 3.4 Read (Single)
 
 ```python
-row = await repo.get(UserFilter(name="Alice"))  # default: Domain return (when mapping_schema is set)
+row = await repo.get(UserFilter(name="Alice"))  # default: Schema return (when mapping_schema is set)
 row_raw = await repo.get(UserFilter(name="Alice"), convert_schema=False)  # ORM return
 ```
 
@@ -354,7 +353,7 @@ updated = await repo.update(UserFilter(name="Bob"), {"email": "bob@new"})
 
 # Dirty Checking on a persistent object
 obj = await repo.get(UserFilter(name="Alice"), convert_schema=False)
-updated_domain = await repo.update_from_model(obj, {"email": "alice@new"})
+updated_Schema = await repo.update_from_model(obj, {"email": "alice@new"})
 ```
 
 ---
@@ -418,7 +417,7 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
 * `update_from_model(base, update, *, session=None, convert_schema=None)`
 
-  * Applies values to a persistent object and flushes. Returns Domain or ORM.
+  * Applies values to a persistent object and flushes. Returns Schema or ORM.
 
 ---
 
@@ -477,17 +476,17 @@ class UserFilter(BaseRepoFilter):
 
 ---
 
-## 6) Mapping (Domain Conversion) Options
+## 6) Mapping (Schema Conversion) Options
 
-* If `mapping_schema` is set, the default return is Domain (Pydantic)
+* If `mapping_schema` is set, the default return is Schema (Pydantic)
 * You can return ORM objects by passing `convert_schema=False`
-* If you set a `BaseMapper`, you can customize Domain ↔ ORM conversions
+* If you set a `BaseMapper`, you can customize Schema ↔ ORM conversions
 
 Example
 
 ```python
 class UserMapper(BaseMapper):
-    def to_domain(self, db: User) -> UserSchema:
+    def to_schema(self, db: User) -> UserSchema:
         return UserSchema(id=db.id, name=db.name, email="Changed")
 
     def to_orm(self, dm: UserSchema) -> User:

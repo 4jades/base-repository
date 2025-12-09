@@ -3,15 +3,15 @@ from typing import Any
 
 class BaseMapper(ABC):
     """
-    Mapping interface between ORM objects and Domain objects (Pydantic schemas).
+    Mapping interface between ORM objects and schema objects (Pydantic schemas).
     """
 
     @abstractmethod
-    def to_domain(self, orm_object: Any) -> Any:
-        """Converts an ORM object into a Domain object."""
+    def to_schema(self, orm_object: Any) -> Any:
+        """Converts an ORM object into a schema object."""
         raise NotImplementedError()
 
     @abstractmethod
-    def to_orm(self, domain_object: Any) -> Any:
-        """Converts a Domain object into an ORM object."""
+    def to_orm(self, schema_object: Any) -> Any:
+        """Converts a schema object into an ORM object."""
         raise NotImplementedError()

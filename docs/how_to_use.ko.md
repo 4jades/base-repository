@@ -70,14 +70,13 @@ class UserFilter(BaseRepoFilter):
     id: int | None = None
     name: str | None = None
 
-class UserRepo(BaseRepository[User]):
+class UserRepo(BaseRepository[User, UserSchema]): # (기본) schema(UserSchema) 반환 활성화
     filter_class = UserFilter
-    mapping_schema = UserSchema  # (기본) Domain(UserSchema) 반환 활성화
 ```
 
 옵션
 
-* `mapper: type[BaseMapper] | None` 제공 시, 도메인↔ORM 변환 규칙을 커스터마이징
+* `mapper: type[BaseMapper] | None` 제공 시, 스키마↔ORM 변환 규칙을 커스터마이징
 * 인스턴스 생성 시 `mapping_schema`, `mapper`, `default_convert_schema`를 덮어쓸 수 있음
 
 ---
@@ -356,7 +355,7 @@ updated = await repo.update(UserFilter(name="Bob"), {"email": "bob@new"})
 
 # 영속 객체 Dirty Checking
 obj = await repo.get(UserFilter(name="Alice"), convert_schema=False)
-updated_domain = await repo.update_from_model(obj, {"email": "alice@new"})
+updated_schema = await repo.update_from_model(obj, {"email": "alice@new"})
 ```
 
 ---
@@ -479,7 +478,7 @@ class UserFilter(BaseRepoFilter):
 
 ## 6) 매핑(도메인 변환) 옵션
 
-* `mapping_schema` 지정 시 기본 반환은 Domain(Pydantic)
+* `mapping_schema` 지정 시 기본 반환은 Schema(Pydantic)
 * `convert_schema=False`로 ORM 반환 가능
 * `BaseMapper`를 지정하면 도메인↔ORM 변환을 커스터마이즈
 
@@ -487,7 +486,7 @@ class UserFilter(BaseRepoFilter):
 
 ```python
 class UserMapper(BaseMapper):
-    def to_domain(self, db: User) -> UserSchema:
+    def to_schema(self, db: User) -> UserSchema:
         return UserSchema(id=db.id, name=db.name, email="Changed")
 
     def to_orm(self, dm: UserSchema) -> User:

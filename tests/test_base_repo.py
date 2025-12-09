@@ -31,7 +31,7 @@ class RFilter(BaseRepoFilter):
 
 
 
-# Repository with mapping_schema enabled (domain conversion by default)
+# Repository with mapping_schema enabled (schema conversion by default)
 class StrictRepo(BaseRepository[Result, ResultStrictSchema]):
     filter_class = RFilter
 
@@ -210,7 +210,7 @@ async def test_count_and_delete_and_create() -> None:
 @pytest.mark.asyncio
 async def test_create_many_converts_by_default_and_records_add_all() -> None:
     """
-    < create_many returns converted domain list by default and calls add_all >
+    < create_many returns converted schema list by default and calls add_all >
     1. Prepare a session that can accept add_all + flush.
     2. Call create_many with schema and dict payloads.
     3. Assert conversion output and recorded add_all behavior.
@@ -467,7 +467,7 @@ async def test_update_from_model_dirty_check_and_flush() -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_from_model_add_and_flush_and_domain_convert() -> None:
+async def test_create_from_model_add_and_flush_and_schema_convert() -> None:
     """
     < create_from_model adds, flushes, and converts by default when schema is set >
     1. Prepare a repo with a session.
@@ -708,10 +708,10 @@ def test_schema_to_orm_falls_back_when_mapper_to_orm_not_implemented() -> None:
     """
     # 1
     class BadMapper(BaseMapper):
-        def to_domain(self, orm_object: AutoIncModel) -> AutoIncSchema:
+        def to_schema(self, orm_object: AutoIncModel) -> AutoIncSchema:
             return AutoIncSchema(pk=orm_object.pk, name=orm_object.name)
 
-        def to_orm(self, domain_object: AutoIncSchema) -> AutoIncModel:
+        def to_orm(self, schema_object: AutoIncSchema) -> AutoIncModel:
             raise NotImplementedError()
 
     # 2
@@ -728,9 +728,9 @@ def test_schema_to_orm_falls_back_when_mapper_to_orm_not_implemented() -> None:
 
 
 
-def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implemented() -> None:
+def test_convert_uses_mapper_to_schema_then_falls_back_to_pydantic_on_not_implemented() -> None:
     """
-    < _convert uses mapper.to_domain first; on NotImplementedError it falls back to Pydantic conversion >
+    < _convert uses mapper.to_schema first; on NotImplementedError it falls back to Pydantic conversion >
     1. Define a mapper that can either succeed or raise NotImplementedError.
     2. When mapper succeeds, assert the mapper-produced schema is returned.
     3. When mapper fails, assert fallback schema conversion is returned.
@@ -740,13 +740,13 @@ def test_convert_uses_mapper_to_domain_then_falls_back_to_pydantic_on_not_implem
         def __init__(self, fail: bool) -> None:
             self._fail = fail
 
-        def to_domain(self, orm_object: AutoIncModel) -> AutoIncSchema:
+        def to_schema(self, orm_object: AutoIncModel) -> AutoIncSchema:
             if self._fail:
                 raise NotImplementedError()
             return AutoIncSchema(pk=999, name="M")
 
-        def to_orm(self, domain_object: AutoIncSchema) -> AutoIncModel:
-            return AutoIncModel(pk=1, name=domain_object.name)
+        def to_orm(self, schema_object: AutoIncSchema) -> AutoIncModel:
+            return AutoIncModel(pk=1, name=schema_object.name)
 
     class Repo(BaseRepository[AutoIncModel, AutoIncSchema]):
         filter_class = DummyFilter
