@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from pydantic import BaseModel
 
 
+
 def validate_config_from_attributes_true(schema: type[BaseModel]) -> bool:
     conf = getattr(schema, "model_config", None)
     if conf is None:

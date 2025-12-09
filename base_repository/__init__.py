@@ -18,8 +18,8 @@ __all__ = [
     # enums
     "StatementType",
     # repo_types
-    "TDomain",
     "TModel",
+    "TSchema",
     "QueryOrStmt",
 ]
 

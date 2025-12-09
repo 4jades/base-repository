@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import builtins
 from collections.abc import Mapping, Sequence
-from typing import Annotated, Any, Generic, cast, get_args
+from typing import Annotated, Any, Generic, List, cast, get_args
 
 from pydantic import BaseModel
 from sqlalchemy import Integer, Update, delete, func, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.engine import ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapper
+from sqlalchemy.orm import Mapper, DeclarativeBase
 from sqlalchemy.sql import Select
 from typing_extensions import Doc
 
@@ -17,20 +16,19 @@ from base_repository.base_filter import BaseRepoFilter
 from base_repository.base_mapper import BaseMapper
 from base_repository.query.converter import query_to_stmt
 from base_repository.query.list_query import ListQuery
-from base_repository.repo_types import QueryOrStmt, TModel
+from base_repository.repo_types import QueryOrStmt, TModel, TSchema
 from base_repository.sa_helper import sa_mapper
 from base_repository.session_provider import SessionProvider
 from base_repository.validator import validate_schema_base
 
 
-class BaseRepository(Generic[TModel]):
+class BaseRepository(Generic[TModel, TSchema]):
     """
     Safe single-model **Repository** base implementation.
 
     Principles
     ----------
     - **Single-model oriented design**: the default API assumes a single-model CRUD flow.
-    (However, `execute()` can run a user-provided SQLAlchemy `Select` as-is, so joins are not strictly blocked in code.)
     - **Schema validation (Strict: required subset)**: when `mapping_schema` is set, its *required* fields must exist on
     the model's **columns (column_attrs)**. (required fields set ⊆ column key set)
     - **Conversion priority**:
@@ -50,19 +48,18 @@ class BaseRepository(Generic[TModel]):
             "but can be explicitly declared in the subclass."
         ),
     ]
+    mapping_schema: Annotated[
+        type[TSchema] | None,
+        Doc("Pydantic schema used for ORM↔Domain conversion. Must pass 'column-only' validation rules."),
+    ] = None
     filter_class: Annotated[
         type[BaseRepoFilter],
         Doc("Filter class for building default WHERE criteria. Dataclass-based filters are recommended."),
     ]
-    mapping_schema: Annotated[
-        type[BaseModel] | None,
-        Doc("Pydantic schema used for ORM↔Domain conversion. Must pass 'column-only' validation rules."),
-    ] = None
     mapper: Annotated[
-        type[BaseMapper[TModel, BaseModel]] | None,
+        type[BaseMapper[TModel, TSchema]] | None,
         Doc("Optional mapper class. If provided, it will take precedence for domain/ORM conversions."),
     ] = None
-
     _default_convert_domain: Annotated[
         bool,
         Doc("Default return type flag. True returns Domain(Pydantic) by default, False returns ORM objects."),
@@ -75,23 +72,40 @@ class BaseRepository(Generic[TModel]):
 
         Behavior
         --------
-        1) Resolve the ORM model class from the generic argument (or an explicit `model` attribute).
-        2) If `mapping_schema` is provided, validate the schema basics (BaseModel + from_attributes).
-        - The required-subset check against actual model columns is performed at instance initialization time.
-        3) If the schema is valid at class level, set `_default_convert_domain=True`.
+        1. Extract Generic args from cls.__orig_bases__ (e.g., BaseRepository[Model, Schema]).
+        2. If the subclass did not explicitly define `model`, infer it from the 1st Generic arg and assign `cls.model`.
+        3. If the subclass did not explicitly define `mapping_schema`, infer it from the 2nd Generic arg
+        (only when it is a Pydantic BaseModel subclass) and assign `cls.mapping_schema`.
+        4. If `mapping_schema` is set, run lightweight schema validation (BaseModel type / from_attributes, etc.)
+        via `validate_schema_base()`.
         """
         super().__init_subclass__(**kwargs)
 
-        # Infer `model` from the generic parameter
-        if not hasattr(cls, "model"):
-            for base in getattr(cls, "__orig_bases__", []):
-                if hasattr(base, "__args__"):
-                    cls.model = get_args(base)[0]
+        inferred_model: type[DeclarativeBase] | None = None
+        inferred_schema: type[BaseModel] | None = None
+
+        for base in getattr(cls, "__orig_bases__", []):
+            args = get_args(base)
+            if not args:
+                continue
+
+            if inferred_model is None and len(args) >= 1 and isinstance(args[0], type):
+                inferred_model = args[0]
+
+            if inferred_schema is None and len(args) >= 2:
+                schema_arg = args[1]
+                if isinstance(schema_arg, type) and issubclass(schema_arg, BaseModel):
+                    inferred_schema = schema_arg
+
+        if not hasattr(cls, "model") and inferred_model is not None:
+            cls.model = cast(type[TModel], inferred_model)
+
+        if getattr(cls, "mapping_schema", None) is None and inferred_schema is not None:
+            cls.mapping_schema = cast(type[TSchema], inferred_schema)
 
         if getattr(cls, "mapping_schema", None) is not None:
             schema = cast(type[BaseModel], cls.mapping_schema)
             validate_schema_base(schema)
-            # Do not access SQLAlchemy mapper(column_attrs) at class definition time.
             cls._default_convert_domain = True
 
 
@@ -103,15 +117,11 @@ class BaseRepository(Generic[TModel]):
         ] = None,
         *,
         mapper: Annotated[
-            BaseMapper[TModel, BaseModel] | None,
+            BaseMapper[TModel, TSchema] | None,
             Doc(
                 "Optionally inject a BaseMapper instance. If omitted, instantiate the class-level `mapper` "
                 "(if configured)."
             ),
-        ] = None,
-        mapping_schema: Annotated[
-            type[BaseModel] | None,
-            Doc("Optionally override schema per instance. If provided, 'column-only' validation runs immediately."),
         ] = None,
         default_convert_domain: Annotated[
             bool | None,
@@ -137,29 +147,17 @@ class BaseRepository(Generic[TModel]):
         if candiate_mapper is None and self.mapper is not None:
             candiate_mapper = self.mapper()
 
-        self._mapper_instance: BaseMapper[TModel, BaseModel] | None = None
+        self._mapper_instance: BaseMapper[TModel, TSchema] | None = None
         if candiate_mapper is not None:
             self._validate_mapper_integrity(candiate_mapper)
             self._mapper_instance = candiate_mapper
 
-        # Validate and apply instance-level schema (column-only)
-        if mapping_schema is not None:
-            validate_schema_base(mapping_schema)
-
-            if self._mapper_instance is None:
-                self._validate_schema_against_model(mapping_schema)
-
-            self.mapping_schema = mapping_schema
-            self._default_convert_domain = True
-
-        # If only class-level schema is set, do a one-time column-only validation at instantiation.
-        elif getattr(self, "mapping_schema", None) is not None and self._mapper_instance is None:
-            schema = cast(type[BaseModel], self.mapping_schema)
-            self._validate_schema_against_model(schema)
+        if self.mapping_schema is not None and self._mapper_instance is None:
+            self._validate_schema_against_model(cast(type[BaseModel], self.mapping_schema))
             self._default_convert_domain = True
 
         if default_convert_domain is not None:
-            if default_convert_domain and getattr(self, "mapping_schema", None) is None:
+            if default_convert_domain and self.mapping_schema is None:
                 raise ValueError("default_convert_domain=True is not allowed without mapping_schema.")
             self._default_convert_domain = default_convert_domain
 
@@ -182,7 +180,26 @@ class BaseRepository(Generic[TModel]):
             )
 
 
-    def _validate_mapper_integrity(self, mapper_instance: BaseMapper[TModel, BaseModel]) -> None:
+    @classmethod
+    def configure_session_provider(cls, provider: SessionProvider) -> None:
+        cls._session_provider = provider
+
+
+    @property
+    def session(self) -> AsyncSession:
+        if self._session_provider is None:
+            if self._specific_session is None:
+                raise RuntimeError("Neither SessionProvider nor specific_session is configured.")
+            return self._specific_session
+
+        return self._session_provider.get_session()
+    
+
+    def _resolve_session(self, session: AsyncSession | None) -> AsyncSession:
+        return session if session is not None else self.session
+    
+
+    def _validate_mapper_integrity(self, mapper_instance: BaseMapper[TModel, TSchema]) -> None:
         """
         Runtime-check that the injected mapper implements the correct interface
         and can handle this Repository's model type.
@@ -209,25 +226,6 @@ class BaseRepository(Generic[TModel]):
                 f"[Strict] Required schema fields must map to model columns only: missing={missing} "
                 f"(model={self.model.__name__})"
             )
-
-
-    @classmethod
-    def configure_session_provider(cls, provider: SessionProvider) -> None:
-        cls._session_provider = provider
-
-
-    @property
-    def session(self) -> AsyncSession:
-        if self._session_provider is None:
-            if self._specific_session is None:
-                raise RuntimeError("Neither SessionProvider nor specific_session is configured.")
-            return self._specific_session
-
-        return self._session_provider.get_session()
-
-
-    def _resolve_session(self, session: AsyncSession | None) -> AsyncSession:
-        return session if session is not None else self.session
 
 
     def _autoinc_pk_keys(self) -> set[str]:
@@ -292,14 +290,14 @@ class BaseRepository(Generic[TModel]):
 
         payload = self._schema_payload(data)
         return self.model(**payload)
-
+    
 
     def _convert(
         self,
-        row: Annotated[TModel, Doc("ORM row (single) or None).")],
+        row: TModel,
         *,
-        convert_domain: Annotated[bool | None, Doc("Per-call domain conversion flag. None uses default.")],
-    ) -> BaseModel | TModel:
+        convert_domain: bool | None = None
+    ) -> TSchema | TModel:
         """
         Convert ORM → domain (Pydantic).
 
@@ -321,9 +319,9 @@ class BaseRepository(Generic[TModel]):
         except NotImplementedError:
             pass
 
-        return schema.model_validate(row)
+        return cast(TSchema, cast(type[BaseModel], schema).model_validate(row))
 
-
+ 
     def list(
         self,
         flt: Annotated[BaseRepoFilter | None, Doc("Initial WHERE filter (optional). None means no conditions.")] = None,
@@ -486,6 +484,7 @@ class BaseRepository(Generic[TModel]):
         s = self._resolve_session(session)
         s.add(obj)
 
+
     def add_all(
         self,
         objs: Annotated[Sequence[TModel], Doc("Sequence of ORM objects to add to the session.")],
@@ -530,7 +529,7 @@ class BaseRepository(Generic[TModel]):
         convert_domain: Annotated[bool | None, Doc("Per-call domain conversion flag.")] = None,
         session: Annotated[AsyncSession | None, Doc("Session to use for execution (optional).")] = None,
         skip_convert: Annotated[bool, Doc("If True, skip domain conversion and return ORM objects as-is.")] = False,
-    ) -> Annotated[builtins.list[Any], Doc("Created objects list (Domain/ORM).")]:
+    ) -> Annotated[List[Any], Doc("Created objects list (Domain/ORM).")]:
         """
         Create multiple rows and `flush()`.
 

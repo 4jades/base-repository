@@ -1,20 +1,25 @@
 import sys
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.orm import DeclarativeBase
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar
+    from typing import TypeVar, Never
 else:
     from typing_extensions import TypeVar
 
 if TYPE_CHECKING:
     from base_repository.query.list_query import ListQuery
 
+class NoSchema:
+    """Typing-only sentinel. Never used as a real mapping schema."""
+    pass
+
 TModel = TypeVar("TModel", bound=DeclarativeBase)
-TDomain = TypeVar("TDomain", bound=BaseModel, default=Any)
+TPydanticSchema = TypeVar("TPydanticSchema", bound=BaseModel)
+TSchema = TypeVar("TSchema", bound=BaseModel | NoSchema, default=NoSchema)
 # If we want to treat the domain type as a generic as well, consider this.
 # It’s likely a trade-off between DX and type safety.
 
