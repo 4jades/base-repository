@@ -56,7 +56,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         Doc("Filter class for building default WHERE criteria. Dataclass-based filters are recommended."),
     ]
     mapper: Annotated[
-        type[BaseMapper[TModel, TSchema]] | None,
+        type[BaseMapper] | None,
         Doc("Optional mapper class. If provided, it will take precedence for schema/ORM conversions."),
     ] = None
     _default_convert_schema: Annotated[
@@ -116,7 +116,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         ] = None,
         *,
         mapper: Annotated[
-            BaseMapper[TModel, TSchema] | None,
+            BaseMapper | None,
             Doc(
                 "Optionally inject a BaseMapper instance. If omitted, instantiate the class-level `mapper` "
                 "(if configured)."
@@ -146,7 +146,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         if candiate_mapper is None and self.mapper is not None:
             candiate_mapper = self.mapper()
 
-        self._mapper_instance: BaseMapper[TModel, TSchema] | None = None
+        self._mapper_instance: BaseMapper | None = None
         if candiate_mapper is not None:
             self._validate_mapper_integrity(candiate_mapper)
             self._mapper_instance = candiate_mapper
@@ -198,7 +198,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         return session if session is not None else self.session
     
 
-    def _validate_mapper_integrity(self, mapper_instance: BaseMapper[TModel, TSchema]) -> None:
+    def _validate_mapper_integrity(self, mapper_instance: BaseMapper) -> None:
         """
         Runtime-check that the injected mapper implements the correct interface
         and can handle this Repository's model type.
@@ -283,7 +283,7 @@ class BaseRepository(Generic[TModel, TSchema]):
         try:
             schema = self.mapping_schema
             if self._mapper_instance and schema is not None and isinstance(data, schema):
-                return self._mapper_instance.to_orm(data)
+                return cast(TModel, self._mapper_instance.to_orm(data))
         except NotImplementedError:
             pass
 
@@ -314,7 +314,7 @@ class BaseRepository(Generic[TModel, TSchema]):
 
         try:
             if self._mapper_instance:
-                return self._mapper_instance.to_schema(row)
+                return cast(TSchema, self._mapper_instance.to_schema(row))
         except NotImplementedError:
             pass
 
