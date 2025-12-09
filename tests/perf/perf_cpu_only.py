@@ -32,9 +32,8 @@ class ResultFilter(BaseRepoFilter):
     checkup_id: int | None = None
 
 
-class ResultStrictRepo(BaseRepository[Result]):
+class ResultStrictRepo(BaseRepository[Result, ResultStrictSchema]):
     filter_class = ResultFilter
-    mapping_schema = ResultStrictSchema
 
 
 # -------------------------------------------------------------------
@@ -331,14 +330,14 @@ async def GET_LIST__bench_repo_pipeline(n: int) -> float:
     """
     fake_result = cached_fake_result_orm(n)
     session = BenchmarkAsyncSession(script=[fake_result])
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=True)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=True)
 
     t0 = time.perf_counter()
     _ = await repo.get_list(
         order_by=[Result.id.asc()],
         page=1,
         size=50,
-        convert_domain=True,
+        convert_schema=True,
     )
     t1 = time.perf_counter()
 
@@ -382,11 +381,11 @@ async def SCHEMA_CONVERT__baserepo(n: int) -> float:
     """
     rows = cached_result_rows(n)
     fake_session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, fake_session), default_convert_domain=True)
+    repo = ResultStrictRepo(session=cast(AsyncSession, fake_session), default_convert_schema=True)
 
     t0 = time.perf_counter()
     for row in rows:
-        repo._convert(row, convert_domain=True)
+        repo._convert(row, convert_schema=True)
     t1 = time.perf_counter()
 
     return t1 - t0
@@ -418,14 +417,14 @@ async def CREATE_MANY__repo_from_dict(n: int) -> float:
     BaseRepo.create_many(dict 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=False)
     payloads = cached_create_payloads_dict(n)
 
     t0 = time.perf_counter()
     await repo.create_many(
         payloads,
         session=cast(AsyncSession, session),
-        convert_domain=False,
+        convert_schema=False,
     )
     t1 = time.perf_counter()
 
@@ -458,14 +457,14 @@ async def CREATE_MANY__repo_from_schema(n: int) -> float:
     BaseRepo.create_many(Pydantic 스키마 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=False)
     payloads = cached_create_payloads_schema(n)
 
     t0 = time.perf_counter()
     await repo.create_many(
         payloads,
         session=cast(AsyncSession, session),
-        convert_domain=False,
+        convert_schema=False,
     )
     t1 = time.perf_counter()
 
@@ -499,7 +498,7 @@ async def CREATE_FROM_MODEL__repo(n: int) -> float:
     BaseRepo.create_from_model(ORM 입력)
     """
     session = FakeAsyncSession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=False)
     objs = cached_create_models(n)
 
     t0 = time.perf_counter()
@@ -507,7 +506,7 @@ async def CREATE_FROM_MODEL__repo(n: int) -> float:
         await repo.create_from_model(
             obj,
             session=cast(AsyncSession, session),
-            convert_domain=False,
+            convert_schema=False,
         )
     t1 = time.perf_counter()
 
@@ -540,7 +539,7 @@ async def UPDATE__repo_update(n: int) -> float:
     BaseRepo.update(dict 입력)
     """
     session = DMLOnlySession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=False)
     payloads = cached_update_payloads_dict(n)
 
     t0 = time.perf_counter()
@@ -582,7 +581,7 @@ async def UPDATE_FROM_MODEL__repo(n: int) -> float:
     BaseRepo.update_from_model(ORM + dict 입력)
     """
     session = DMLOnlySession()
-    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_domain=False)
+    repo = ResultStrictRepo(session=cast(AsyncSession, session), default_convert_schema=False)
     bases = list(cached_create_models(n))
     payloads = cached_update_payloads_dict(n)
 
@@ -593,7 +592,7 @@ async def UPDATE_FROM_MODEL__repo(n: int) -> float:
             base,
             update=payloads[i],
             session=cast(AsyncSession, session),
-            convert_domain=False,
+            convert_schema=False,
         )
     t1 = time.perf_counter()
 

@@ -26,7 +26,7 @@
   - [4.1 Repository Instance Methods](#41-repository-instance-methods)
   - [4.2 ListQuery Chaining Methods](#42-listquery-chaining-methods)
 - [5) BaseRepoFilter](#5-baserepofilter)
-- [6) Mapping (Domain Conversion) Options](#6-mapping-domain-conversion-options)
+- [6) Mapping (schema Conversion) Options](#6-mapping-schema-conversion-options)
   - [6.1 Schema Validation Behavior When Using a Mapper](#61-schema-validation-behavior-when-using-a-mapper)
 - [7) Performance Tests](#7-performance-tests)
 
@@ -70,15 +70,14 @@ class UserFilter(BaseRepoFilter):
     id: int | None = None
     name: str | None = None
 
-class UserRepo(BaseRepository[User]):
+class UserRepo(BaseRepository[User, UserSchema]): # (default) enables Schema(UserSchema) return by default
     filter_class = UserFilter
-    mapping_schema = UserSchema  # (default) enables Domain(UserSchema) return by default
 ```
 
 Options
 
-* If you provide `mapper: type[BaseMapper] | None`, you can customize Domain ↔ ORM conversion rules.
-* At instance construction time, you can override `mapping_schema`, `mapper`, and `default_convert_domain`.
+* If you provide `mapper: type[BaseMapper] | None`, you can customize Schema ↔ ORM conversion rules.
+* At instance construction time, you can override `mapping_schema`, `mapper`, and `default_convert_schema`.
 
 ---
 
@@ -174,8 +173,8 @@ PK handling rules
 ## 3.4 Read (Single)
 
 ```python
-row = await repo.get(UserFilter(name="Alice"))  # default: Domain return (when mapping_schema is set)
-row_raw = await repo.get(UserFilter(name="Alice"), convert_domain=False)  # ORM return
+row = await repo.get(UserFilter(name="Alice"))  # default: Schema return (when mapping_schema is set)
+row_raw = await repo.get(UserFilter(name="Alice"), convert_schema=False)  # ORM return
 ```
 
 ---
@@ -353,8 +352,8 @@ cnt = await repo.count(UserFilter(name="Alice"))
 updated = await repo.update(UserFilter(name="Bob"), {"email": "bob@new"})
 
 # Dirty Checking on a persistent object
-obj = await repo.get(UserFilter(name="Alice"), convert_domain=False)
-updated_domain = await repo.update_from_model(obj, {"email": "alice@new"})
+obj = await repo.get(UserFilter(name="Alice"), convert_schema=False)
+updated_Schema = await repo.update_from_model(obj, {"email": "alice@new"})
 ```
 
 ---
@@ -383,16 +382,16 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * DSL entrypoint for list queries.
 
-* `execute(q_or_stmt, *, session=None, convert_domain=None)`
+* `execute(q_or_stmt, *, session=None, convert_schema=None)`
 
   * Executes `ListQuery` or a statement.
   * SELECT always returns a `list`.
 
-* `get(flt, *, convert_domain=None, session=None)` / `get_or_fail(...)`
+* `get(flt, *, convert_schema=None, session=None)` / `get_or_fail(...)`
 
   * Single-row read.
 
-* `get_list(*, flt=None, order_by=None, cursor=None, page=None, size=None, session=None, convert_domain=None)`
+* `get_list(*, flt=None, order_by=None, cursor=None, page=None, size=None, session=None, convert_schema=None)`
 
   * Convenience method; builds a `ListQuery` internally and calls `execute()`.
 
@@ -404,9 +403,9 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * Only adds to session. Caller controls flush/commit.
 
-* `create(data, *, session=None, convert_domain=None)` /
-  `create_many(items, *, session=None, convert_domain=None)` /
-  `create_from_model(obj, *, session=None, convert_domain=None)`
+* `create(data, *, session=None, convert_schema=None)` /
+  `create_many(items, *, session=None, convert_schema=None)` /
+  `create_from_model(obj, *, session=None, convert_schema=None)`
 
   * Insert + flush.
   * `create/create_many` ignore autoincrement PK input.
@@ -416,9 +415,9 @@ deleted = await repo.delete(UserFilter(name="Alice"))
 
   * Bulk update via a single UPDATE SQL. Returns rowcount.
 
-* `update_from_model(base, update, *, session=None, convert_domain=None)`
+* `update_from_model(base, update, *, session=None, convert_schema=None)`
 
-  * Applies values to a persistent object and flushes. Returns Domain or ORM.
+  * Applies values to a persistent object and flushes. Returns Schema or ORM.
 
 ---
 
@@ -477,25 +476,24 @@ class UserFilter(BaseRepoFilter):
 
 ---
 
-## 6) Mapping (Domain Conversion) Options
+## 6) Mapping (Schema Conversion) Options
 
-* If `mapping_schema` is set, the default return is Domain (Pydantic)
-* You can return ORM objects by passing `convert_domain=False`
-* If you set a `BaseMapper`, you can customize Domain ↔ ORM conversions
+* If `mapping_schema` is set, the default return is Schema (Pydantic)
+* You can return ORM objects by passing `convert_schema=False`
+* If you set a `BaseMapper`, you can customize Schema ↔ ORM conversions
 
 Example
 
 ```python
 class UserMapper(BaseMapper):
-    def to_domain(self, db: User) -> UserSchema:
+    def to_schema(self, db: User) -> UserSchema:
         return UserSchema(id=db.id, name=db.name, email="Changed")
 
     def to_orm(self, dm: UserSchema) -> User:
         return User(**dm.model_dump(exclude=["name"]), name="fixed")
 
-class UserRepo(BaseRepository[User]):
+class UserRepo(BaseRepository[User, UserSchema]):
     filter_class = UserFilter
-    mapping_schema = UserSchema
     mapper = UserMapper
 
 row = await repo.get(UserFilter(id=1))
@@ -515,9 +513,8 @@ Intent
 Summary
 
 ```python
-class UserRepo(BaseRepository[User]):
+class UserRepo(BaseRepository[User, UserSchema]):
     filter_class = UserFilter
-    mapping_schema = UserSchema
     mapper = UserMapper  # if mapper exists, column-only strict validation is disabled
 ```
 

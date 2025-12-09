@@ -40,5 +40,5 @@ def test_repo_types_version_branch_is_covered(monkeypatch) -> None:
 
     # 5
     assert hasattr(mod, "TModel")
-    assert hasattr(mod, "TDomain")
+    assert hasattr(mod, "TSchema")
     assert hasattr(mod, "QueryOrStmt")

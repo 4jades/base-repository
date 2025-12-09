@@ -13,6 +13,7 @@ SQLAlchemy를 래핑해 기본 CRUD와 조회 DSL을 제공하는 Repository 라
 Repository를 상속하면, 조회/생성/수정/삭제를 바로 쓸 수 있습니다.
 
 - 간단한 CRUD를 매번 만들 필요가 없습니다.
+- MyPy 친화적입니다. 제네릭에 맞는 리턴 타입을 지원합니다.
 - 필요한 Repo 함수가 있으면 프로젝트에서 직접 추가해 확장할 수 있습니다.
 - Pydantic 스키마와 SQLAlchemy ORM 간 변환을 위한 Mapper 도입을 지원합니다.
 
@@ -74,9 +75,17 @@ class UserFilter(BaseRepoFilter):
     id: int | iterable[int] | None = None
     name: str | iterable[str] | None = None
 
+class UserRepo(BaseRepository[UserModel, UserSchema]):
+    filter_class = UserFilter
+
+# 스키마 매핑을 원치않는다면
 class UserRepo(BaseRepository[UserModel]):
     filter_class = UserFilter
-    mapping_schema = UserSchema  # 선택: 기본 반환을 Pydantic으로
+
+# 스키마 1대1 매핑이 아닌 매퍼가 필요하다면
+class UserRepo(BaseRepository[UserModel, UserSchema]):
+    filter_class = UserFilter
+    mapper = Usermapper
 ```
 
 
@@ -102,26 +111,63 @@ BaseRepository.configure_session_provider(MysqlSessionProvider())
 ```python
 async with AsyncSession(engine) as session:
     repo = UserRepo(session)
-```
+```    
 
+또는, 메소드 호출 시점에 세션을 직접 넘겨도 됩니다.
+
+```python
+await repo.create({"name": "Alice", "email": "a@test.com"}, session=session)
+```
 
 ### 3) 바로 CRUD 쓰기
 
 ```python
 repo = UserRepo()
 
-# Create
-created = await repo.create({"name": "Alice", "email": "a@test.com"})
-
 # Get one
 user = await repo.get(UserFilter(name=["Alice", "Bob"]))
-user_orm = await repo.get(UserFilter(name="Alice"), convert_domain=False)
+user_orm = await repo.get(UserFilter(name="Alice"), convert_schema=False)
+
+# Get one (required)
+user2 = await repo.get_or_fail(UserFilter(id=1))
+
+# Create (dict)
+created = await repo.create({"name": "Alice", "email": "a@test.com"})
+
+# Create (schema)
+created2 = await repo.create(UserSchema(name="Bob", email="b@test.com"))
+
+# Create (schema -> ORM)
+created2_orm = await repo.create(
+    UserSchema(name="Bob", email="b@test.com"),
+    convert_schema=False,
+)
+
+# Create many
+created_many = await repo.create_many(
+    [
+        {"name": "Alice", "email": "a@test.com"},
+        UserSchema(name="Bob", email="b@test.com"),
+    ]
+)
+
+# Create many (skip schema conversion -> ORM list)
+created_many_orm = await repo.create_many(
+    [
+        {"name": "Alice", "email": "a@test.com"},
+        {"name": "Bob", "email": "b@test.com"},
+    ],
+    skip_convert=True,
+)
+
+# Create from ORM model (as-is)
+created3 = await repo.create_from_model(UserModel(name="Chris", email="c@test.com"))
 
 # List (OFFSET paging)
 q = (
     repo.list()
         .where(UserFilter(name="A"))
-        .order_by(["id"])
+        .order_by(["id", "name"]) # order_by("id"), order_by(User.id), order_by(User.id.desc()) ..
         .paging(page=1, size=20)
 )
 users = await repo.execute(q)
@@ -129,16 +175,32 @@ users = await repo.execute(q)
 # List (CURSOR paging)
 q1 = (
     repo.list()
-        .order_by(["id"])
-        .with_cursor(None)
+        .order_by(["id", "name"]) # order_by("id"), order_by(User.id), order_by(User.id.desc()) ..
+        .with_cursor({})  # first page
         .limit(20)
 )
 users1 = await repo.execute(q1)
+
+# List (convenience: get_list)
+users2 = await repo.get_list(flt=UserFilter(name="A"), order_by=["id", User.name], page=1, size=20)
+
+# List (convenience: get_list + cursor)
+users3 = await repo.get_list(order_by="id", cursor={}, size=20)
 
 # Update / Delete / Count
 cnt = await repo.count(UserFilter(name="Alice"))
 updated_rows = await repo.update(UserFilter(name="Bob"), {"email": "bob@new"})
 deleted_rows = await repo.delete(UserFilter(name="Alice"))
+
+# Update (dirty checking)
+base = await repo.get_or_fail(UserFilter(id=1), convert_schema=False)
+after = await repo.update_from_model(base=base, update={"email": "new@test.com"}, convert_schema=True)
+
+# add / add_all (caller controls flush/commit)
+repo.add(User(name="D", email="d@test.com"))
+repo.add_all([User(name="E", email="e@test.com"), User(name="F", email="f@test.com")])
+await repo.session.flush()
 ```
+
 
 ---

@@ -1,18 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Generic
-from .repo_types import TDomain, TModel
+from typing import Any
 
-class BaseMapper(ABC, Generic[TModel, TDomain]):
+class BaseMapper(ABC):
     """
-    Mapping interface between ORM objects and Domain objects (Pydantic schemas).
+    Mapping interface between ORM objects and schema objects (Pydantic schemas).
     """
 
     @abstractmethod
-    def to_domain(self, orm_object: TModel) -> TDomain:
-        """Converts an ORM object into a Domain object."""
+    def to_schema(self, orm_object: Any) -> Any:
+        """Converts an ORM object into a schema object."""
         raise NotImplementedError()
 
     @abstractmethod
-    def to_orm(self, domain_object: TDomain) -> TModel:
-        """Converts a Domain object into an ORM object."""
+    def to_orm(self, schema_object: Any) -> Any:
+        """Converts a schema object into an ORM object."""
         raise NotImplementedError()
