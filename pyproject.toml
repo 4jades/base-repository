@@ -57,7 +57,7 @@ exclude = ["tests", "tests.*"]
 base_repository = ["py.typed"]
 
 [tool.setuptools_scm]
-# read version on tag
+tag_regex = '^v(?P<version>\d+\.\d+\.\d+)$'
 
 [tool.coverage.run]
 omit = [
