@@ -28,7 +28,13 @@ To see more about [how to test](./tox.ini) and the [result](./docs/dependency_te
 | 3.10           | >= 1.4             | >= 1.10           |
 | >= 3.13        | >= 1.4             | >= 2.8, 1.7-1.10  |
 
+## Templates
 
+If you want a working FastAPI example that uses this library end-to-end:
+
+- FastAPI blog API template: https://github.com/4jades/fastapi-baserepository-template
+
+---
 
 ## Links
 - [How to use](https://4jades.github.io/base-repository/how_to_use.html)

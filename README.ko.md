@@ -29,6 +29,13 @@ Repository를 상속하면, 조회/생성/수정/삭제를 바로 쓸 수 있습
 | 3.10           | >= 1.4             | >= 1.10           |
 | >= 3.13        | >= 1.4             | >= 2.8            |
 
+## Templates
+
+이 라이브러리를 사용한 FastAPI 예제 템플릿입니다.
+
+- FastAPI 블로그 API 템플릿: https://github.com/4jades/fastapi-baserepository-template
+
+---
 
 ## Links
 - [How to use](https://4jades.github.io/base-repository/how_to_use.html)
